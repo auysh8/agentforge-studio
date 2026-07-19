@@ -1,99 +1,43 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Layout, Model, TabNode, IJsonModel } from "flexlayout-react";
-import "flexlayout-react/style/dark.css";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Download, Play, Save, Blocks, Terminal, RotateCcw } from "lucide-react";
+import React, { useState } from "react";
 import { FlowBuilder } from "@/components/flow-builder";
 import { PropertiesPanel } from "@/components/properties-panel";
+import { Sidebar } from "@/components/sidebar";
+import { ConsolePanel } from "@/components/console-panel";
 import { useFlowStore } from "@/store/flow-store";
 import { useCompletion } from "@ai-sdk/react";
 import { ExportModal } from "@/components/export-modal";
-
-const initialLayout: IJsonModel = {
-  global: {
-    tabEnableClose: false,
-    tabSetHeaderHeight: 40,
-    tabSetTabStripHeight: 40,
-    splitterSize: 6,
-    tabEnableRename: false,
-    tabEnableFloat: true,
-  },
-  borders: [],
-  layout: {
-    type: "row",
-    weight: 100,
-    children: [
-      {
-        type: "tabset",
-        weight: 15,
-        children: [
-          {
-            type: "tab",
-            name: "Toolbox",
-            component: "toolbox"
-          }
-        ]
-      },
-      {
-        type: "row",
-        weight: 65,
-        children: [
-          {
-            type: "tabset",
-            weight: 75,
-            children: [
-              {
-                type: "tab",
-                name: "Canvas",
-                component: "canvas"
-              }
-            ]
-          },
-          {
-            type: "tabset",
-            weight: 25,
-            children: [
-              {
-                type: "tab",
-                name: "Output Console",
-                component: "console"
-              }
-            ]
-          }
-        ]
-      },
-      {
-        type: "tabset",
-        weight: 20,
-        children: [
-          {
-            type: "tab",
-            name: "Properties",
-            component: "properties"
-          }
-        ]
-      }
-    ]
-  }
-};
+import {
+  Download,
+  Play,
+  Save,
+  Search,
+  X,
+  PanelRightClose,
+} from "lucide-react";
 
 export default function Home() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [model, setModel] = useState(() => Model.fromJson(initialLayout));
+  const [activeView, setActiveView] = useState("canvas");
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+  const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+
+  const selectedNode = useFlowStore((state) => state.selectedNode);
+
+  // Auto-open properties panel when a node is selected
+  React.useEffect(() => {
+    if (selectedNode) {
+      setIsPropertiesOpen(true);
+    }
+  }, [selectedNode]);
 
   const handleSave = () => {
     setToastMessage("Saved successfully!");
     setTimeout(() => setToastMessage(""), 3000);
   };
-  
-  const resetLayout = () => {
-    setModel(Model.fromJson(initialLayout));
-  };
-  
+
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.effectAllowed = "move";
@@ -101,8 +45,8 @@ export default function Home() {
 
   const getExecutableGraph = useFlowStore((state) => state.getExecutableGraph);
   const { completion, complete, isLoading, error } = useCompletion({
-    api: '/api/execute',
-    streamProtocol: 'text',
+    api: "/api/execute",
+    streamProtocol: "text",
   });
 
   const handleRunSkill = async () => {
@@ -111,109 +55,113 @@ export default function Home() {
       alert("Graph must contain at least a Trigger node and an LLM node.");
       return;
     }
-    await complete('', { body: graph });
-  };
-
-  const factory = (node: TabNode) => {
-    const component = node.getComponent();
-    
-    if (component === "toolbox") {
-      return (
-        <ScrollArea className="h-full w-full bg-card">
-          <div className="p-4 space-y-6">
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Agents</h4>
-              <div className="grid gap-2">
-                <Button variant="secondary" className="justify-start h-9 text-xs cursor-grab" size="sm" draggable onDragStart={(e) => onDragStart(e, 'llm')}>LLM Node</Button>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data</h4>
-              <div className="grid gap-2">
-                <Button variant="secondary" className="justify-start h-9 text-xs cursor-grab" size="sm" draggable onDragStart={(e) => onDragStart(e, 'prompt')}>Prompt</Button>
-                <Button variant="secondary" className="justify-start h-9 text-xs cursor-grab" size="sm" draggable onDragStart={(e) => onDragStart(e, 'trigger')}>Trigger</Button>
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
-      );
-    }
-    if (component === "canvas") {
-      return (
-        <div className="h-full w-full relative bg-muted/20">
-          <FlowBuilder />
-        </div>
-      );
-    }
-    if (component === "console") {
-      return (
-        <div className="flex h-full w-full flex-col bg-card">
-          <div className="flex items-center px-4 py-2 border-b bg-muted/30 gap-2 shrink-0">
-            <Terminal className="h-4 w-4 text-muted-foreground" />
-            <span className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">Console</span>
-          </div>
-          <div className="flex-1 p-4 font-mono text-sm whitespace-pre-wrap overflow-y-auto">
-            {error && <span className="text-red-500">{error.message}</span>}
-            {(!completion && !error && !isLoading) && <span className="text-muted-foreground">Ready. Click "Run Skill" to execute.</span>}
-            {completion}
-          </div>
-        </div>
-      );
-    }
-    if (component === "properties") {
-      return (
-        <ScrollArea className="h-full w-full bg-card">
-          <div className="p-4">
-            <PropertiesPanel />
-          </div>
-        </ScrollArea>
-      );
-    }
-    return null;
+    setIsConsoleOpen(true);
+    await complete("", { body: graph });
   };
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
-      {/* Top Navbar */}
-      <header className="flex h-14 items-center justify-between border-b px-4 bg-card shrink-0 z-[100]">
-        <div className="flex items-center gap-2">
-          <div className="rounded-md bg-primary p-1">
-            <Blocks className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold tracking-tight">AgentForge</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={resetLayout} title="Reset Window Layout">
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" />
-            Save
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setIsExportModalOpen(true)}>
-            <Download className="mr-2 h-4 w-4" />
-            Export MCP
-          </Button>
-          <Button size="sm" onClick={handleRunSkill} disabled={isLoading}>
-            <Play className="mr-2 h-4 w-4" />
-            {isLoading ? "Running..." : "Run Skill"}
-          </Button>
-        </div>
-      </header>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar */}
+      <Sidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        isConsoleOpen={isConsoleOpen}
+        onToggleConsole={() => setIsConsoleOpen((v) => !v)}
+        onDragStart={onDragStart}
+      />
 
-      {/* Main Workspace with FlexLayout */}
-      <div className="flex-1 relative w-full overflow-hidden">
-        <Layout 
-          model={model} 
-          factory={factory} 
-          realtimeResize={true}
-        />
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="flex items-center justify-between h-16 px-6 shrink-0 bg-background">
+          {/* Greeting + Search */}
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-foreground tracking-tight">
+              Build something amazing
+            </h1>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsPropertiesOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            >
+              <PanelRightClose className="h-3.5 w-3.5" />
+              Properties
+            </button>
+            <button
+              onClick={handleSave}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-card text-foreground border border-warm-border hover:bg-muted/40 transition-all shadow-sm"
+            >
+              <Save className="h-3.5 w-3.5" />
+              Save
+            </button>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-card text-foreground border border-warm-border hover:bg-muted/40 transition-all shadow-sm"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export MCP
+            </button>
+            <button
+              onClick={handleRunSkill}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
+                bg-gold text-gold-foreground hover:brightness-105 transition-all shadow-sm
+                disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Play className="h-3.5 w-3.5" />
+              {isLoading ? "Running..." : "Run Skill"}
+            </button>
+          </div>
+        </header>
+
+        {/* Canvas Area */}
+        <div className="flex-1 relative mx-3 mb-3 rounded-2xl overflow-hidden bg-card border border-warm-border shadow-sm">
+          <FlowBuilder />
+
+          {/* Console (floating at bottom) */}
+          <ConsolePanel
+            isOpen={isConsoleOpen}
+            onClose={() => setIsConsoleOpen(false)}
+            completion={completion}
+            error={error}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
 
-      <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} />
+      {/* Properties Panel (slide-out from right) */}
+      {isPropertiesOpen && (
+        <div className="w-[320px] shrink-0 h-full border-l border-warm-border bg-card animate-slide-in-right flex flex-col">
+          <div className="flex items-center justify-between px-5 h-16 shrink-0 border-b border-warm-border">
+            <h2 className="text-sm font-semibold text-foreground">Properties</h2>
+            <button
+              onClick={() => setIsPropertiesOpen(false)}
+              className="p-1.5 rounded-lg hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-5">
+            <PropertiesPanel />
+          </div>
+        </div>
+      )}
 
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+      />
+
+      {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-4 right-4 z-[200] bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg transition-all">
+        <div className="fixed bottom-4 right-4 z-[200] bg-gold text-gold-foreground px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium animate-slide-up">
           {toastMessage}
         </div>
       )}

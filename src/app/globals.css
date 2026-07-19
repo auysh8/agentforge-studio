@@ -46,75 +46,134 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Custom accent colors */
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-rose-accent: var(--rose-accent);
+  --color-rose-accent-foreground: var(--rose-accent-foreground);
+  --color-cream: var(--cream);
+  --color-warm-border: var(--warm-border);
 }
 
+/* ============================================
+   WARM LIGHT THEME (intelly-inspired)
+   ============================================ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Warm cream foundation */
+  --background: #F5F0E8;
+  --foreground: #1C1C1E;
+
+  /* Cards: clean warm white */
+  --card: #FFFFFF;
+  --card-foreground: #1C1C1E;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1C1E;
+
+  /* Primary: dark charcoal (buttons, strong actions) */
+  --primary: #1C1C1E;
+  --primary-foreground: #FAFAF8;
+
+  /* Secondary: soft cream */
+  --secondary: #EDE8DE;
+  --secondary-foreground: #1C1C1E;
+
+  /* Muted: warm gray */
+  --muted: #E8E3D9;
+  --muted-foreground: #7A7670;
+
+  /* Accent: light warm */
+  --accent: #EDE8DE;
+  --accent-foreground: #1C1C1E;
+
+  --destructive: #E54D4D;
+
+  /* Borders: subtle warm */
+  --border: #DDD8CE;
+  --input: #DDD8CE;
+  --ring: #B8B3A8;
+
+  /* Chart palette */
+  --chart-1: #F5D56E;
+  --chart-2: #F2A4B8;
+  --chart-3: #7EC8A0;
+  --chart-4: #8BB4E0;
+  --chart-5: #C4A0E0;
+
+  --radius: 1rem;
+
+  /* Dark sidebar (persists in light mode like intelly) */
+  --sidebar: #1C1C1E;
+  --sidebar-foreground: #E8E3D9;
+  --sidebar-primary: #F5D56E;
+  --sidebar-primary-foreground: #1C1C1E;
+  --sidebar-accent: #2C2C2E;
+  --sidebar-accent-foreground: #FAFAF8;
+  --sidebar-border: #3A3A3C;
+  --sidebar-ring: #555;
+
+  /* Accents */
+  --gold: #F5D56E;
+  --gold-foreground: #1C1C1E;
+  --rose-accent: #F2A4B8;
+  --rose-accent-foreground: #1C1C1E;
+  --cream: #FAF7F0;
+  --warm-border: #E8E0D0;
 }
 
+/* ============================================
+   DARK THEME (warm dark variant)
+   ============================================ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #1A1918;
+  --foreground: #EDE8DE;
+
+  --card: #252321;
+  --card-foreground: #EDE8DE;
+
+  --popover: #252321;
+  --popover-foreground: #EDE8DE;
+
+  --primary: #F5D56E;
+  --primary-foreground: #1C1C1E;
+
+  --secondary: #2C2A28;
+  --secondary-foreground: #EDE8DE;
+
+  --muted: #2C2A28;
+  --muted-foreground: #9A958D;
+
+  --accent: #2C2A28;
+  --accent-foreground: #EDE8DE;
+
+  --destructive: #E54D4D;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #7A7670;
+
+  --chart-1: #F5D56E;
+  --chart-2: #F2A4B8;
+  --chart-3: #7EC8A0;
+  --chart-4: #8BB4E0;
+  --chart-5: #C4A0E0;
+
+  --sidebar: #151413;
+  --sidebar-foreground: #C8C3B8;
+  --sidebar-primary: #F5D56E;
+  --sidebar-primary-foreground: #1C1C1E;
+  --sidebar-accent: #2C2A28;
+  --sidebar-accent-foreground: #EDE8DE;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #555;
+
+  --gold: #F5D56E;
+  --gold-foreground: #1C1C1E;
+  --rose-accent: #F2A4B8;
+  --rose-accent-foreground: #1C1C1E;
+  --cream: #252321;
+  --warm-border: rgba(255, 255, 255, 0.08);
 }
 
 @layer base {
@@ -129,26 +188,29 @@
   }
 }
 
-/* React Flow Dark Mode Overrides */
+/* ============================================
+   REACT FLOW OVERRIDES (warm theme)
+   ============================================ */
 .react-flow__controls {
-  border-radius: var(--radius-md) !important;
+  border-radius: var(--radius) !important;
   overflow: hidden !important;
   background-color: var(--color-card) !important;
-  border: 1px solid var(--color-border) !important;
+  border: 1px solid var(--color-warm-border) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
 }
 .react-flow__controls-button {
   background-color: var(--color-card) !important;
-  border-bottom: 1px solid var(--color-border) !important;
+  border-bottom: 1px solid var(--color-warm-border) !important;
 }
 .react-flow__controls-button:hover {
-  background-color: var(--color-muted) !important;
+  background-color: var(--color-cream) !important;
 }
 .react-flow__controls-button svg {
   fill: var(--color-foreground) !important;
 }
 .react-flow__attribution {
   background-color: transparent !important;
-  opacity: 0.5 !important;
+  opacity: 0.4 !important;
   font-weight: 500 !important;
 }
 .react-flow__attribution a {
@@ -156,73 +218,60 @@
 }
 .react-flow__minimap {
   background-color: var(--color-card) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--color-warm-border) !important;
+  border-radius: var(--radius) !important;
   overflow: hidden !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
 }
 .react-flow__minimap-mask {
-  fill: var(--color-card) !important;
+  fill: var(--color-cream) !important;
   opacity: 0.8 !important;
 }
 
-/* FlexLayout Dark Mode Overrides */
-.flexlayout__layout {
-  --color-1: var(--color-card);
-  --color-2: var(--color-background);
-  --color-3: var(--color-muted);
-  --color-4: var(--color-border);
-  --color-5: var(--color-foreground);
-  --color-6: var(--color-muted-foreground);
-  --color-drag1: rgba(255, 255, 255, 0.1);
-  --color-drag2: rgba(255, 255, 255, 0.2);
-  --font-size: 13px;
-  --font-family: var(--font-sans);
+/* Edge styling */
+.react-flow__edge-path {
+  stroke: var(--color-muted-foreground) !important;
+  stroke-width: 2 !important;
+}
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-gold) !important;
+}
+.react-flow__handle {
+  transition: all 0.15s ease !important;
+}
+.react-flow__handle:hover {
+  transform: scale(1.3) !important;
 }
 
-.flexlayout__tab {
-  background-color: var(--color-card) !important;
-  border: 1px solid var(--color-border) !important;
-  border-radius: var(--radius-md) !important;
-  overflow: hidden !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+/* ============================================
+   GLOBAL ANIMATIONS
+   ============================================ */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-.flexlayout__tab_button {
-  background-color: var(--color-muted) !important;
-  color: var(--color-muted-foreground) !important;
-  border-top-left-radius: var(--radius-md) !important;
-  border-top-right-radius: var(--radius-md) !important;
-  margin-right: 2px !important;
-  border: 1px solid transparent !important;
-  border-bottom: none !important;
-  padding: 0 12px !important;
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.flexlayout__tab_button--selected {
-  background-color: var(--color-card) !important;
-  color: var(--color-foreground) !important;
-  border: 1px solid var(--color-border) !important;
-  border-bottom: 1px solid var(--color-card) !important;
-  z-index: 10 !important;
+.animate-slide-out-right {
+  animation: slideOutRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-
-.flexlayout__tabset_header_outer {
-  background-color: transparent !important;
-  border-bottom: 1px solid var(--color-border) !important;
+.animate-fade-in {
+  animation: fadeIn 0.2s ease;
 }
-
-.flexlayout__tabset_header {
-  background-color: transparent !important;
-}
-
-.flexlayout__splitter {
-  background-color: transparent !important;
-}
-.flexlayout__splitter:hover {
-  background-color: var(--color-border) !important;
-}
-
-.flexlayout__tab_button_content {
-  font-size: 13px !important;
-  font-weight: 600 !important;
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }

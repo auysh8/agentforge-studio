@@ -29,7 +29,8 @@ const getId = () => `dndnode_${id++}`;
 
 function FlowBuilderContent() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode } = useFlowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode } =
+    useFlowStore();
   const { screenToFlowPosition } = useReactFlow();
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -53,8 +54,12 @@ function FlowBuilderContent() {
       });
 
       let defaultData = { label: `${type} node` };
-      if (type === 'llm') defaultData = { ...defaultData, model: 'gpt-4o' };
-      if (type === 'prompt') defaultData = { ...defaultData, prompt: 'You are a helpful assistant.' };
+      if (type === "llm") defaultData = { ...defaultData, model: "gpt-4o" } as any;
+      if (type === "prompt")
+        defaultData = {
+          ...defaultData,
+          prompt: "You are a helpful assistant.",
+        } as any;
 
       const newNode = {
         id: getId(),
@@ -80,21 +85,33 @@ function FlowBuilderContent() {
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView
+        defaultEdgeOptions={{
+          style: { strokeWidth: 2, stroke: "var(--color-muted-foreground)" },
+          type: "smoothstep",
+        }}
       >
-        <Controls className="bg-card text-foreground border-border fill-foreground" />
-        <MiniMap 
-          className="bg-card border border-border rounded-md shadow-sm"
-          maskColor="var(--color-muted)"
+        <Controls />
+        <MiniMap
+          maskColor="var(--color-cream)"
           nodeColor={(node) => {
             switch (node.type) {
-              case 'trigger': return '#22c55e'; // green-500
-              case 'prompt': return '#3b82f6';  // blue-500
-              case 'llm': return '#a855f7';     // purple-500
-              default: return 'var(--color-foreground)';
+              case "trigger":
+                return "#F5D56E";
+              case "prompt":
+                return "#8BB4E0";
+              case "llm":
+                return "#F2A4B8";
+              default:
+                return "var(--color-foreground)";
             }
           }}
         />
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="var(--border)" />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={28}
+          size={1.2}
+          color="var(--color-warm-border)"
+        />
       </ReactFlow>
     </div>
   );

@@ -1,18 +1,47 @@
-import { Handle, Position } from '@xyflow/react';
-import { Brain } from 'lucide-react';
+import { Handle, Position } from "@xyflow/react";
+import { Brain } from "lucide-react";
 
 export function LLMNode({ data }: { data: any }) {
   return (
-    <div className="rounded-md border bg-card text-card-foreground shadow-sm min-w-[200px] max-w-[250px]">
-      <Handle type="target" position={Position.Left} className="w-4 h-4 border-2 border-background bg-primary after:content-[''] after:absolute after:-inset-4" />
-      <div className="flex items-center gap-2 border-b bg-muted/50 px-3 py-2 rounded-t-md">
-        <Brain className="h-4 w-4 text-purple-500" />
-        <span className="text-sm font-semibold">{data.label || 'LLM Call'}</span>
+    <div
+      className="rounded-2xl border shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-shadow hover:shadow-md"
+      style={{
+        backgroundColor: "rgba(242, 164, 184, 0.10)",
+        borderColor: "rgba(242, 164, 184, 0.3)",
+      }}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="w-3.5 h-3.5 border-2 border-card bg-rose-accent rounded-full"
+      />
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: "rgba(168, 85, 247, 0.15)" }}
+        >
+          <Brain className="h-3.5 w-3.5 text-purple-500" />
+        </div>
+        <span className="text-sm font-semibold text-foreground">
+          {data.label || "LLM Call"}
+        </span>
       </div>
-      <div className="p-3">
-        <p className="text-xs text-muted-foreground">Model: {data.model || 'gpt-4o'}</p>
+      <div className="px-3.5 pb-3">
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium"
+          style={{
+            backgroundColor: "rgba(168, 85, 247, 0.10)",
+            color: "#A855F7",
+          }}
+        >
+          {data.model || "gpt-4o"}
+        </span>
       </div>
-      <Handle type="source" position={Position.Right} className="w-3 h-3 border-2 border-background bg-muted-foreground" />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="w-3 h-3 border-2 border-card bg-muted-foreground rounded-full"
+      />
     </div>
   );
 }
