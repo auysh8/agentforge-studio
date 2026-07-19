@@ -206,6 +206,7 @@ export default function Home() {
         <Layout 
           model={model} 
           factory={factory} 
+          realtimeResize={true}
         />
       </div>
 
