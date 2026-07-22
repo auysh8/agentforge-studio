@@ -4,7 +4,22 @@ import { useFlowStore } from "@/store/flow-store";
 import { Copy, Check, X, FileCode, FileJson, FileText } from "lucide-react";
 import { useState } from "react";
 
-function generateMCPCode(systemPrompt: string, modelName: string) {
+function generateMCPCode(graph: { nodes: any[], edges: any[] }) {
+  const cleanedNodes = graph.nodes.map((n) => ({
+    id: n.id,
+    type: n.type,
+    data: n.data,
+  }));
+  const cleanedEdges = graph.edges.map((e) => ({
+    id: e.id,
+    source: e.source,
+    target: e.target,
+    sourceHandle: e.sourceHandle,
+  }));
+
+  const nodesJson = JSON.stringify(cleanedNodes, null, 2);
+  const edgesJson = JSON.stringify(cleanedEdges, null, 2);
+
   return `import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -18,31 +33,96 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+const nodes = ${nodesJson};
+const edges = ${edgesJson};
+
 server.tool(
   "run_skill",
   "Executes the built AI skill",
   { input: z.string().describe("The user input or data to process") },
   async ({ input }) => {
-    let model;
-    const modelName = "${modelName}";
-    if (modelName.startsWith('gpt-')) {
-      const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      model = openai(modelName);
-    } else if (modelName.includes('mistral') || modelName.includes('mixtral')) {
-      const mistral = createMistral({ apiKey: process.env.MISTRAL_API_KEY });
-      model = mistral(modelName);
-    } else {
-      const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
-      model = ollama(modelName);
-    }
-
     try {
-      const { text } = await generateText({
-        model: model,
-        system: ${JSON.stringify("SYSTEM_PROMPT_PLACEHOLDER")},
-        prompt: input,
-      });
-      return { content: [{ type: "text", text: text }] };
+      let currentNode = nodes.find((n: any) => n.type === 'trigger');
+      if (!currentNode) {
+        return { content: [{ type: "text", text: "Error: Graph must contain a Trigger node" }], isError: true };
+      }
+
+      let outputContext = input || '';
+      let systemPrompt = 'You are a helpful AI assistant.';
+
+      while (currentNode) {
+        if (currentNode.type === 'trigger') {
+          // Trigger uses the MCP input
+        } else if (currentNode.type === 'prompt') {
+          systemPrompt = currentNode.data?.prompt || systemPrompt;
+        } else if (currentNode.type === 'api') {
+          const method = currentNode.data?.method || 'GET';
+          const url = currentNode.data?.url;
+          if (url) {
+            try {
+              const fetchOptions: RequestInit = { method };
+              if (method !== 'GET' && method !== 'HEAD') {
+                fetchOptions.body = outputContext;
+              }
+              const response = await fetch(url, fetchOptions);
+              outputContext = await response.text();
+            } catch (e: any) {
+              outputContext = \\\`API Request failed: \\\${e.message}\\\`;
+            }
+          }
+        } else if (currentNode.type === 'condition') {
+          // Handled during edge traversal below
+        } else if (currentNode.type === 'llm') {
+          const modelName = currentNode.data?.model || 'gpt-4o';
+          let model;
+          if (modelName.startsWith('gpt-')) {
+            const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+            model = openai(modelName);
+          } else if (modelName.includes('mistral') || modelName.includes('mixtral')) {
+            const mistral = createMistral({ apiKey: process.env.MISTRAL_API_KEY });
+            model = mistral(modelName);
+          } else {
+            const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
+            model = ollama(modelName);
+          }
+
+          const { text } = await generateText({
+            model: model as any,
+            system: systemPrompt,
+            prompt: outputContext,
+          });
+          
+          return { content: [{ type: "text", text }] };
+        }
+
+        const outgoingEdges = edges.filter((e: any) => e.source === currentNode.id);
+        if (outgoingEdges.length === 0) break;
+
+        let nextEdge;
+        if (currentNode.type === 'condition') {
+          let conditionResult = false;
+          try {
+            // eslint-disable-next-line no-new-func
+            const func = new Function('output', \\\`return \\\${currentNode.data?.condition || 'false'};\\\`);
+            conditionResult = !!func(outputContext);
+          } catch (e) {
+            console.error("Condition evaluation error", e);
+            conditionResult = false;
+          }
+          const handleId = conditionResult ? 'true' : 'false';
+          nextEdge = outgoingEdges.find((e: any) => e.sourceHandle === handleId) || outgoingEdges[0];
+        } else {
+          nextEdge = outgoingEdges[0];
+        }
+
+        if (nextEdge) {
+          currentNode = nodes.find((n: any) => n.id === nextEdge.target);
+        } else {
+          currentNode = null;
+        }
+      }
+
+      return { content: [{ type: "text", text: outputContext }] };
     } catch (e: any) {
       return { content: [{ type: "text", text: "Error: " + e.message }], isError: true };
     }
@@ -125,9 +205,7 @@ export function ExportModal({
 
     const systemPrompt =
       (promptNode?.data?.prompt as string) || "You are a helpful AI assistant.";
-    const modelName = (llmNode?.data?.model as string) || "gpt-4o";
-
-    code = generateMCPCode(systemPrompt, modelName);
+    code = generateMCPCode(graph);
     pkg = generatePackageJson();
     md = generateSkillMd(systemPrompt);
   }
