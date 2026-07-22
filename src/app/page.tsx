@@ -52,7 +52,7 @@ export default function Home() {
   const handleRunSkill = async () => {
     const graph = getExecutableGraph();
     if (!graph) {
-      alert("Graph must contain at least a Trigger node and an LLM node.");
+      alert("Graph must contain at least a Trigger node.");
       return;
     }
     setIsConsoleOpen(true);

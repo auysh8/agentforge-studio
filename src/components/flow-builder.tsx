@@ -17,11 +17,15 @@ import { useFlowStore } from "@/store/flow-store";
 import { TriggerNode } from "./nodes/trigger-node";
 import { LLMNode } from "./nodes/llm-node";
 import { PromptNode } from "./nodes/prompt-node";
+import { APINode } from "./nodes/api-node";
+import { ConditionNode } from "./nodes/condition-node";
 
 const nodeTypes = {
   trigger: TriggerNode,
   llm: LLMNode,
   prompt: PromptNode,
+  api: APINode,
+  condition: ConditionNode,
 };
 
 const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -59,6 +63,8 @@ function FlowBuilderContent() {
           ...defaultData,
           prompt: "You are a helpful assistant.",
         } as any;
+      if (type === "api") defaultData = { ...defaultData, method: "GET", url: "https://api.example.com/data" } as any;
+      if (type === "condition") defaultData = { ...defaultData, condition: "output.contains('error')" } as any;
 
       const newNode = {
         id: getId(),
@@ -102,6 +108,10 @@ function FlowBuilderContent() {
                 return "#8BB4E0";
               case "llm":
                 return "#F2A4B8";
+              case "api":
+                return "#F472B6"; // pink-400
+              case "condition":
+                return "#FBBF24"; // amber-400
               default:
                 return "var(--color-foreground)";
             }

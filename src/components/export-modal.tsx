@@ -124,8 +124,8 @@ export function ExportModal({
     const llmNode = graph.nodes.find((n) => n.type === "llm");
 
     const systemPrompt =
-      promptNode?.data?.prompt || "You are a helpful AI assistant.";
-    const modelName = llmNode?.data?.model || "gpt-4o";
+      (promptNode?.data?.prompt as string) || "You are a helpful AI assistant.";
+    const modelName = (llmNode?.data?.model as string) || "gpt-4o";
 
     code = generateMCPCode(systemPrompt, modelName);
     pkg = generatePackageJson();

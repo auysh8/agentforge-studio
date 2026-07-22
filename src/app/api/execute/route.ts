@@ -10,51 +10,109 @@ export async function POST(req: Request) {
   try {
     const { nodes, edges } = await req.json();
 
-    // 1. Extract necessary data from nodes
-    const triggerNode = nodes.find((n: any) => n.type === 'trigger');
-    const promptNode = nodes.find((n: any) => n.type === 'prompt');
-    const llmNode = nodes.find((n: any) => n.type === 'llm');
-
-    if (!triggerNode || !llmNode) {
-      return new Response(JSON.stringify({ error: 'Graph must contain a Trigger and an LLM node' }), {
+    // Find the trigger node
+    let currentNode = nodes.find((n: any) => n.type === 'trigger');
+    if (!currentNode) {
+      return new Response(JSON.stringify({ error: 'Graph must contain a Trigger node' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const userInput = triggerNode.data?.input || '';
-    const systemPrompt = promptNode?.data?.prompt || 'You are a helpful AI assistant.';
-    const modelName = llmNode.data?.model || 'gpt-4o';
+    let outputContext = currentNode.data?.input || '';
+    let systemPrompt = 'You are a helpful AI assistant.';
 
-    // 2. Determine the provider based on the model name
-    let model;
-    if (modelName.startsWith('gpt-')) {
-      const openai = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY || '',
-      });
-      model = openai(modelName);
-    } else if (modelName.includes('mistral') || modelName.includes('mixtral')) {
-      const mistral = createMistral({
-        apiKey: process.env.MISTRAL_API_KEY || '',
-      });
-      model = mistral(modelName);
-    } else {
-      // Default to local Ollama
-      const ollama = createOllama({
-        baseURL: 'http://localhost:11434/api',
-      });
-      model = ollama(modelName);
+    // Iteratively traverse the DAG
+    while (currentNode) {
+      // 1. Execute current node logic
+      if (currentNode.type === 'trigger') {
+        outputContext = currentNode.data?.input || '';
+      } else if (currentNode.type === 'prompt') {
+        systemPrompt = currentNode.data?.prompt || systemPrompt;
+      } else if (currentNode.type === 'api') {
+        const method = currentNode.data?.method || 'GET';
+        const url = currentNode.data?.url;
+        if (url) {
+          try {
+            const fetchOptions: RequestInit = { method };
+            if (method !== 'GET' && method !== 'HEAD') {
+              fetchOptions.body = outputContext;
+            }
+            const response = await fetch(url, fetchOptions);
+            outputContext = await response.text();
+          } catch (e: any) {
+            outputContext = `API Request failed: ${e.message}`;
+          }
+        }
+      } else if (currentNode.type === 'condition') {
+        // Condition doesn't change output, but we need to record its result for edge traversal
+        // It's evaluated right before edge finding
+      } else if (currentNode.type === 'llm') {
+        // LLM node ends traversal and streams the response
+        const modelName = currentNode.data?.model || 'gpt-4o';
+        
+        let model;
+        if (modelName.startsWith('gpt-')) {
+          const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
+          model = openai(modelName);
+        } else if (modelName.includes('mistral') || modelName.includes('mixtral')) {
+          const mistral = createMistral({ apiKey: process.env.MISTRAL_API_KEY || '' });
+          model = mistral(modelName);
+        } else {
+          const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
+          model = ollama(modelName);
+        }
+
+        const result = streamText({
+          model: model as any,
+          system: systemPrompt,
+          prompt: outputContext,
+        });
+
+        return result.toTextStreamResponse();
+      }
+
+      // 2. Find the next node
+      const outgoingEdges = edges.filter((e: any) => e.source === currentNode.id);
+      
+      if (outgoingEdges.length === 0) {
+        break; // End of flow
+      }
+
+      let nextEdge;
+      if (currentNode.type === 'condition') {
+        // Evaluate condition
+        let conditionResult = false;
+        try {
+          // eslint-disable-next-line no-new-func
+          const func = new Function('output', `return ${currentNode.data?.condition || 'false'};`);
+          conditionResult = !!func(outputContext);
+        } catch (e) {
+          console.error("Condition evaluation error", e);
+          conditionResult = false;
+        }
+        
+        const handleId = conditionResult ? 'true' : 'false';
+        nextEdge = outgoingEdges.find((e: any) => e.sourceHandle === handleId) || outgoingEdges[0];
+      } else {
+        // For linear nodes, just pick the first outgoing edge
+        nextEdge = outgoingEdges[0];
+      }
+
+      if (nextEdge) {
+        currentNode = nodes.find((n: any) => n.id === nextEdge.target);
+      } else {
+        currentNode = null;
+      }
     }
 
-    // 3. Execute the LLM call with Vercel AI SDK
-    const result = streamText({
-      model: model,
-      system: systemPrompt,
-      prompt: userInput,
+    // If we finished traversal without hitting an LLM node, we return the raw text output
+    // so the useCompletion hook reads it correctly as a finished block of text.
+    return new Response(outputContext, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
     });
 
-    // 4. Return the streaming response
-    return result.toTextStreamResponse();
   } catch (error: any) {
     console.error('Execution error:', error);
     return new Response(JSON.stringify({ error: error.message || 'Execution failed' }), {

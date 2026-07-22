@@ -77,11 +77,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
   getExecutableGraph: () => {
     const { nodes, edges } = get();
-    // Validate that we have at least a trigger and an LLM node
+    // Validate that we have at least a trigger node
     const hasTrigger = nodes.some(n => n.type === 'trigger');
-    const hasLLM = nodes.some(n => n.type === 'llm');
     
-    if (!hasTrigger || !hasLLM) {
+    if (!hasTrigger) {
       return null;
     }
     
