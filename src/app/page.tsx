@@ -75,14 +75,14 @@ export default function Home() {
         {/* Top Header */}
         <header className="flex items-center justify-between h-16 px-6 shrink-0 bg-background">
           {/* Greeting + Search */}
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-bold text-foreground tracking-tight">
+          <div className="flex items-center gap-4 min-w-0 pr-4">
+            <h1 className="text-xl font-bold text-foreground tracking-tight truncate">
               Build something amazing
             </h1>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsPropertiesOpen((v) => !v)}
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium

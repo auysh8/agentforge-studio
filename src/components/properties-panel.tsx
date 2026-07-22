@@ -5,9 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Play, Brain, MessageSquare } from "lucide-react";
-import Editor from "@monaco-editor/react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 
 const nodeTypeConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
   trigger: { icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.12)", label: "Trigger" },
@@ -20,12 +18,6 @@ export function PropertiesPanel() {
   const updateNodeData = useFlowStore((state) => state.updateNodeData);
   const deleteNode = useFlowStore((state) => state.deleteNode);
   const { theme, systemTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   const isDark =
     theme === "dark" || (theme === "system" && systemTheme === "dark");
 
@@ -106,27 +98,16 @@ export function PropertiesPanel() {
           <Label htmlFor="node-prompt" className="text-xs font-medium text-muted-foreground">
             System Prompt
           </Label>
-          <div className="border border-warm-border rounded-xl overflow-hidden h-[280px]">
-            {mounted && (
-              <Editor
-                height="100%"
-                defaultLanguage="markdown"
-                theme={isDark ? "vs-dark" : "light"}
-                value={selectedNode.data.prompt || ""}
-                onChange={(value) =>
-                  updateNodeData(selectedNode.id, { prompt: value })
-                }
-                options={{
-                  minimap: { enabled: false },
-                  wordWrap: "on",
-                  lineNumbers: "off",
-                  padding: { top: 12, bottom: 12 },
-                  fontSize: 13,
-                  scrollBeyondLastLine: false,
-                }}
-              />
-            )}
-          </div>
+          <Textarea
+            id="node-prompt"
+            value={selectedNode.data.prompt || ""}
+            onChange={(e) =>
+              updateNodeData(selectedNode.id, { prompt: e.target.value })
+            }
+            className="h-[280px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm"
+            style={{ fieldSizing: "fixed" } as any}
+            placeholder="Type your system prompt here..."
+          />
         </div>
       )}
 

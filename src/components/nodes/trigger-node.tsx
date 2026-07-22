@@ -6,7 +6,7 @@ export function TriggerNode({ data }: { data: any }) {
     <div
       className="rounded-2xl border shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-shadow hover:shadow-md"
       style={{
-        backgroundColor: "rgba(245, 213, 110, 0.12)",
+        background: "linear-gradient(rgba(245, 213, 110, 0.12), rgba(245, 213, 110, 0.12)), var(--color-card)",
         borderColor: "rgba(245, 213, 110, 0.3)",
       }}
     >

@@ -24,8 +24,7 @@ const nodeTypes = {
   prompt: PromptNode,
 };
 
-let id = 0;
-const getId = () => `dndnode_${id++}`;
+const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 function FlowBuilderContent() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -85,13 +84,15 @@ function FlowBuilderContent() {
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView
+        deleteKeyCode={["Backspace", "Delete"]}
         defaultEdgeOptions={{
           style: { strokeWidth: 2, stroke: "var(--color-muted-foreground)" },
           type: "smoothstep",
         }}
       >
-        <Controls />
+        <Controls position="top-left" />
         <MiniMap
+          position="top-right"
           maskColor="var(--color-cream)"
           nodeColor={(node) => {
             switch (node.type) {

@@ -242,6 +242,16 @@
 .react-flow__handle:hover {
   transform: scale(1.3) !important;
 }
+/* Expanded hitbox for easier connection when zoomed out */
+.react-flow__handle::after {
+  content: "";
+  position: absolute;
+  top: -15px;
+  bottom: -15px;
+  left: -15px;
+  right: -15px;
+  background: transparent;
+}
 
 /* ============================================
    GLOBAL ANIMATIONS

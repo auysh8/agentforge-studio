@@ -6,7 +6,7 @@ export function LLMNode({ data }: { data: any }) {
     <div
       className="rounded-2xl border shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-shadow hover:shadow-md"
       style={{
-        backgroundColor: "rgba(242, 164, 184, 0.10)",
+        background: "linear-gradient(rgba(242, 164, 184, 0.10), rgba(242, 164, 184, 0.10)), var(--color-card)",
         borderColor: "rgba(242, 164, 184, 0.3)",
       }}
     >
