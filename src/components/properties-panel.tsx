@@ -186,6 +186,20 @@ export function PropertiesPanel() {
               className="rounded-xl bg-cream border-warm-border h-9 text-sm"
             />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="node-headers" className="text-xs font-medium text-muted-foreground">
+              Headers (JSON)
+            </Label>
+            <Textarea
+              id="node-headers"
+              value={(selectedNode.data.headers as string) || ""}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { headers: e.target.value })
+              }
+              className="h-[120px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm font-mono"
+              placeholder='{\n  "Authorization": "Bearer token"\n}'
+            />
+          </div>
         </>
       )}
 

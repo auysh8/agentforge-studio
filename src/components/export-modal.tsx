@@ -64,6 +64,13 @@ server.tool(
               if (method !== 'GET' && method !== 'HEAD') {
                 fetchOptions.body = outputContext;
               }
+              if (currentNode.data?.headers) {
+                try {
+                  fetchOptions.headers = JSON.parse(currentNode.data.headers);
+                } catch (e: any) {
+                  throw new Error("Invalid JSON in API Headers");
+                }
+              }
               const response = await fetch(url, fetchOptions);
               outputContext = await response.text();
             } catch (e: any) {
