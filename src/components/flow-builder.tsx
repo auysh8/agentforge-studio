@@ -56,15 +56,15 @@ function FlowBuilderContent() {
         y: event.clientY,
       });
 
-      let defaultData = { label: `${type} node` };
-      if (type === "llm") defaultData = { ...defaultData, model: "gpt-4o" } as any;
+      let defaultData: Record<string, unknown> = { label: `${type} node` };
+      if (type === "llm") defaultData = { ...defaultData, model: "gpt-4o" };
       if (type === "prompt")
         defaultData = {
           ...defaultData,
           prompt: "You are a helpful assistant.",
-        } as any;
-      if (type === "api") defaultData = { ...defaultData, method: "GET", url: "https://api.example.com/data" } as any;
-      if (type === "condition") defaultData = { ...defaultData, condition: "output.contains('error')" } as any;
+        };
+      if (type === "api") defaultData = { ...defaultData, method: "GET", url: "https://api.example.com/data" };
+      if (type === "condition") defaultData = { ...defaultData, condition: "output.contains('error')" };
 
       const newNode = {
         id: getId(),

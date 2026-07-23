@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Globe } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function APINode({ data }: { data: any }) {
   return (
     <div

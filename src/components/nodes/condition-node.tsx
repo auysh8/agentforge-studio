@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Split } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function ConditionNode({ data }: { data: any }) {
   return (
     <div

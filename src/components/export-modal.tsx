@@ -3,8 +3,9 @@
 import { useFlowStore } from "@/store/flow-store";
 import { Copy, Check, X, FileCode, FileJson, FileText } from "lucide-react";
 import { useState } from "react";
+import { type Node, type Edge } from "@xyflow/react";
 
-function generateMCPCode(graph: { nodes: any[], edges: any[] }) {
+function generateMCPCode(graph: { nodes: Node[], edges: Edge[] }) {
   const cleanedNodes = graph.nodes.map((n) => ({
     id: n.id,
     type: n.type,
@@ -208,7 +209,6 @@ export function ExportModal({
   const graph = getExecutableGraph();
   if (graph) {
     const promptNode = graph.nodes.find((n) => n.type === "prompt");
-    const llmNode = graph.nodes.find((n) => n.type === "llm");
 
     const systemPrompt =
       (promptNode?.data?.prompt as string) || "You are a helpful AI assistant.";

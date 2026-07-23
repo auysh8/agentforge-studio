@@ -12,7 +12,6 @@ import {
   Download,
   Play,
   Save,
-  Search,
   X,
   PanelRightClose,
 } from "lucide-react";
@@ -29,7 +28,7 @@ export default function Home() {
   // Auto-open properties panel when a node is selected
   React.useEffect(() => {
     if (selectedNode) {
-      setIsPropertiesOpen(true);
+      setTimeout(() => setIsPropertiesOpen(true), 0);
     }
   }, [selectedNode]);
 

@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Play, Brain, MessageSquare, Globe, Split } from "lucide-react";
-import { useTheme } from "next-themes";
 
-const nodeTypeConfig: Record<string, { icon: any; color: string; bg: string; label: string }> = {
+const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   trigger: { icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.12)", label: "Trigger" },
   llm: { icon: Brain, color: "#A855F7", bg: "rgba(168, 85, 247, 0.12)", label: "LLM Node" },
   prompt: { icon: MessageSquare, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.12)", label: "Prompt" },
@@ -19,9 +18,6 @@ export function PropertiesPanel() {
   const selectedNode = useFlowStore((state) => state.selectedNode);
   const updateNodeData = useFlowStore((state) => state.updateNodeData);
   const deleteNode = useFlowStore((state) => state.deleteNode);
-  const { theme, systemTheme } = useTheme();
-  const isDark =
-    theme === "dark" || (theme === "system" && systemTheme === "dark");
 
   if (!selectedNode) {
     return (
@@ -126,6 +122,7 @@ export function PropertiesPanel() {
               updateNodeData(selectedNode.id, { prompt: e.target.value })
             }
             className="h-[280px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={{ fieldSizing: "fixed" } as any}
             placeholder="Type your system prompt here..."
           />
@@ -145,6 +142,7 @@ export function PropertiesPanel() {
               updateNodeData(selectedNode.id, { input: e.target.value })
             }
             className="h-[280px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm"
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={{ fieldSizing: "fixed" } as any}
             placeholder="Type your test input here..."
           />

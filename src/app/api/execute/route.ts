@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const { nodes, edges } = await req.json();
 
     // Find the trigger node
-    let currentNode = nodes.find((n: any) => n.type === 'trigger');
+    let currentNode = nodes.find((n: Record<string, unknown>) => n.type === 'trigger');
     if (!currentNode) {
       return new Response(JSON.stringify({ error: 'Graph must contain a Trigger node' }), {
         status: 400,
@@ -41,14 +41,14 @@ export async function POST(req: Request) {
             if (currentNode.data?.headers) {
               try {
                 fetchOptions.headers = JSON.parse(currentNode.data.headers);
-              } catch (e: any) {
+              } catch {
                 throw new Error("Invalid JSON in API Headers");
               }
             }
             const response = await fetch(url, fetchOptions);
             outputContext = await response.text();
-          } catch (e: any) {
-            outputContext = `API Request failed: ${e.message}`;
+          } catch (e) {
+            outputContext = `API Request failed: ${(e as Error).message}`;
           }
         }
       } else if (currentNode.type === 'condition') {
@@ -71,6 +71,7 @@ export async function POST(req: Request) {
         }
 
         const result = streamText({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           model: model as any,
           system: systemPrompt,
           prompt: outputContext,
@@ -80,7 +81,7 @@ export async function POST(req: Request) {
       }
 
       // 2. Find the next node
-      const outgoingEdges = edges.filter((e: any) => e.source === currentNode.id);
+      const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
       
       if (outgoingEdges.length === 0) {
         break; // End of flow
@@ -91,7 +92,6 @@ export async function POST(req: Request) {
         // Evaluate condition
         let conditionResult = false;
         try {
-          // eslint-disable-next-line no-new-func
           const func = new Function('output', `return ${currentNode.data?.condition || 'false'};`);
           conditionResult = !!func(outputContext);
         } catch (e) {
@@ -100,14 +100,14 @@ export async function POST(req: Request) {
         }
         
         const handleId = conditionResult ? 'true' : 'false';
-        nextEdge = outgoingEdges.find((e: any) => e.sourceHandle === handleId) || outgoingEdges[0];
+        nextEdge = outgoingEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outgoingEdges[0];
       } else {
         // For linear nodes, just pick the first outgoing edge
         nextEdge = outgoingEdges[0];
       }
 
       if (nextEdge) {
-        currentNode = nodes.find((n: any) => n.id === nextEdge.target);
+        currentNode = nodes.find((n: Record<string, unknown>) => n.id === nextEdge.target);
       } else {
         currentNode = null;
       }
@@ -120,9 +120,9 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'text/plain' },
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Execution error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Execution failed' }), {
+    return new Response(JSON.stringify({ error: (error as Error).message || 'Execution failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

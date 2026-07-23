@@ -1,6 +1,6 @@
 "use client";
 
-import { Terminal, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Terminal, X } from "lucide-react";
 
 interface ConsolePanelProps {
   isOpen: boolean;

@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Play } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function TriggerNode({ data }: { data: any }) {
   return (
     <div

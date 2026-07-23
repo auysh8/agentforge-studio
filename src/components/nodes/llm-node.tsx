@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { Brain } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function LLMNode({ data }: { data: any }) {
   return (
     <div

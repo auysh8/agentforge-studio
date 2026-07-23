@@ -21,7 +21,7 @@ type FlowState = {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   addNode: (node: Node) => void;
-  updateNodeData: (nodeId: string, data: any) => void;
+  updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   setSelectedNode: (node: Node | null) => void;
   deleteNode: (nodeId: string) => void;
   getExecutableGraph: () => { nodes: Node[]; edges: Edge[] } | null;
@@ -53,7 +53,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   addNode: (node: Node) => {
     set({ nodes: [...get().nodes, node] });
   },
-  updateNodeData: (nodeId: string, data: any) => {
+  updateNodeData: (nodeId: string, data: Record<string, unknown>) => {
     const newNodes = get().nodes.map((node) =>
       node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
     );

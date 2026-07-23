@@ -1,6 +1,7 @@
 import { Handle, Position } from "@xyflow/react";
 import { MessageSquare } from "lucide-react";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function PromptNode({ data }: { data: any }) {
   return (
     <div className="rounded-2xl border border-warm-border bg-card shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-shadow hover:shadow-md">

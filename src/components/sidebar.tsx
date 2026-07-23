@@ -71,7 +71,7 @@ export function Sidebar({
   });
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
   }, []);
 
   const toggleCategory = (id: string) => {
