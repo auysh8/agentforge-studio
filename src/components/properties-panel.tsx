@@ -194,10 +194,29 @@ export function PropertiesPanel() {
               onChange={(e) =>
                 updateNodeData(selectedNode.id, { headers: e.target.value })
               }
-              className="h-[120px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm font-mono"
-              placeholder='{\n  "Authorization": "Bearer token"\n}'
+              className="h-[100px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm font-mono"
+              placeholder='{\n  "x-api-key": "your-key",\n  "Content-Type": "application/json"\n}'
             />
           </div>
+          {((selectedNode.data.method as string) || "GET") !== "GET" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="node-body" className="text-xs font-medium text-muted-foreground">
+                Request Body (JSON / String)
+              </Label>
+              <Textarea
+                id="node-body"
+                value={(selectedNode.data.body as string) || ""}
+                onChange={(e) =>
+                  updateNodeData(selectedNode.id, { body: e.target.value })
+                }
+                className="h-[120px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm font-mono"
+                placeholder='{\n  "query": "{{trigger.input}}",\n  "numResults": 5\n}'
+              />
+              <p className="text-[10px] text-muted-foreground/60 leading-tight">
+                Supports variable placeholders like {"{{trigger.input}}"} or {"{{output}}"}.
+              </p>
+            </div>
+          )}
         </>
       )}
 

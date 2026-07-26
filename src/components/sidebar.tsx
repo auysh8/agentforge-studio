@@ -51,6 +51,7 @@ interface SidebarProps {
   onViewChange: (view: string) => void;
   isConsoleOpen: boolean;
   onToggleConsole: () => void;
+  onOpenSettings: () => void;
   onDragStart: (event: React.DragEvent, nodeType: string) => void;
 }
 
@@ -59,6 +60,7 @@ export function Sidebar({
   onViewChange,
   isConsoleOpen,
   onToggleConsole,
+  onOpenSettings,
   onDragStart,
 }: SidebarProps) {
   const { theme, setTheme } = useTheme();
@@ -214,8 +216,7 @@ export function Sidebar({
           icon={Settings}
           label="Settings"
           active={false}
-          onClick={() => {}}
-          badge="Soon"
+          onClick={onOpenSettings}
         />
       </nav>
 

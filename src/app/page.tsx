@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { FlowBuilder } from "@/components/flow-builder";
 import { PropertiesPanel } from "@/components/properties-panel";
 import { Sidebar } from "@/components/sidebar";
@@ -8,22 +8,32 @@ import { ConsolePanel } from "@/components/console-panel";
 import { useFlowStore } from "@/store/flow-store";
 import { useCompletion } from "@ai-sdk/react";
 import { ExportModal } from "@/components/export-modal";
+import { SettingsModal } from "@/components/settings-modal";
 import {
   Download,
   Play,
   Save,
   X,
   PanelRightClose,
+  FolderOpen,
+  FileJson,
+  RotateCcw,
 } from "lucide-react";
 
 export default function Home() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [activeView, setActiveView] = useState("canvas");
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [isPropertiesOpen, setIsPropertiesOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedNode = useFlowStore((state) => state.selectedNode);
+  const nodes = useFlowStore((state) => state.nodes);
+  const edges = useFlowStore((state) => state.edges);
+  const loadGraph = useFlowStore((state) => state.loadGraph);
+  const resetGraph = useFlowStore((state) => state.resetGraph);
 
   // Auto-open properties panel when a node is selected
   React.useEffect(() => {
@@ -33,8 +43,51 @@ export default function Home() {
   }, [selectedNode]);
 
   const handleSave = () => {
-    setToastMessage("Saved successfully!");
+    setToastMessage("Saved to LocalStorage!");
     setTimeout(() => setToastMessage(""), 3000);
+  };
+
+  const handleExportJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ nodes, edges }, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `agentforge-workflow-${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    setToastMessage("Exported workflow JSON!");
+    setTimeout(() => setToastMessage(""), 3000);
+  };
+
+  const handleImportJson = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const fileReader = new FileReader();
+    if (event.target.files && event.target.files[0]) {
+      fileReader.readAsText(event.target.files[0], "UTF-8");
+      fileReader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target?.result as string);
+          if (parsed && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+            loadGraph(parsed);
+            setToastMessage("Loaded workflow from JSON!");
+            setTimeout(() => setToastMessage(""), 3000);
+          } else {
+            alert("Invalid workflow JSON file format.");
+          }
+        } catch {
+          alert("Could not parse JSON file.");
+        }
+      };
+    }
+    // Reset file input so re-importing same file works
+    if (event.target) event.target.value = "";
+  };
+
+  const handleClearCanvas = () => {
+    if (nodes.length === 0 || confirm("Are you sure you want to clear the canvas?")) {
+      resetGraph();
+      setToastMessage("Cleared canvas");
+      setTimeout(() => setToastMessage(""), 3000);
+    }
   };
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
@@ -55,17 +108,42 @@ export default function Home() {
       return;
     }
     setIsConsoleOpen(true);
-    await complete("", { body: graph });
+
+    const headers: Record<string, string> = {};
+    if (typeof window !== "undefined") {
+      const savedSettings = localStorage.getItem("agentforge-settings");
+      if (savedSettings) {
+        try {
+          const parsed = JSON.parse(savedSettings);
+          if (parsed.openaiKey) headers["x-openai-api-key"] = parsed.openaiKey;
+          if (parsed.mistralKey) headers["x-mistral-api-key"] = parsed.mistralKey;
+        } catch {
+          // ignore error
+        }
+      }
+    }
+
+    await complete("", { body: graph, headers });
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* Hidden file input for JSON import */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImportJson}
+        accept=".json"
+        className="hidden"
+      />
+
       {/* Sidebar */}
       <Sidebar
         activeView={activeView}
         onViewChange={setActiveView}
         isConsoleOpen={isConsoleOpen}
         onToggleConsole={() => setIsConsoleOpen((v) => !v)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onDragStart={onDragStart}
       />
 
@@ -83,12 +161,31 @@ export default function Home() {
           {/* Action Buttons */}
           <div className="flex items-center gap-2 shrink-0">
             <button
-              onClick={() => setIsPropertiesOpen((v) => !v)}
+              onClick={handleClearCanvas}
+              title="Clear Canvas"
               className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
-                bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+                bg-muted/60 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
             >
-              <PanelRightClose className="h-3.5 w-3.5" />
-              Properties
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Import Workflow JSON"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-card text-foreground border border-warm-border hover:bg-muted/40 transition-all shadow-sm"
+            >
+              <FolderOpen className="h-3.5 w-3.5 text-blue-500" />
+              Import
+            </button>
+            <button
+              onClick={handleExportJson}
+              title="Export Workflow JSON"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-card text-foreground border border-warm-border hover:bg-muted/40 transition-all shadow-sm"
+            >
+              <FileJson className="h-3.5 w-3.5 text-amber-500" />
+              Export JSON
             </button>
             <button
               onClick={handleSave}
@@ -97,6 +194,14 @@ export default function Home() {
             >
               <Save className="h-3.5 w-3.5" />
               Save
+            </button>
+            <button
+              onClick={() => setIsPropertiesOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium
+                bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all"
+            >
+              <PanelRightClose className="h-3.5 w-3.5" />
+              Properties
             </button>
             <button
               onClick={() => setIsExportModalOpen(true)}
@@ -156,6 +261,12 @@ export default function Home() {
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
 
       {/* Toast */}

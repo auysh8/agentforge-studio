@@ -63,7 +63,7 @@ server.tool(
             try {
               const fetchOptions: RequestInit = { method };
               if (method !== 'GET' && method !== 'HEAD') {
-                fetchOptions.body = outputContext;
+                fetchOptions.body = currentNode.data?.body || outputContext;
               }
               if (currentNode.data?.headers) {
                 try {
