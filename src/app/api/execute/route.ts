@@ -79,7 +79,7 @@ export async function POST(req: Request) {
         logExecution(`[Prompt Node] System Prompt: ${systemPrompt}`);
       } else if (currentNode.type === 'api') {
         const method = (currentNode.data?.method as string) || 'GET';
-        let url = (currentNode.data?.url as string) || '';
+        let url = (currentNode.data?.url as string) || (currentNode.data?.endpoint as string) || '';
         url = interpolateVariables(url, nodeOutputs, outputContext);
 
         logExecution(`[API Node Executing] Method: ${method} | URL: ${url}`);
@@ -130,9 +130,39 @@ export async function POST(req: Request) {
           }
         }
         nodeOutputs[currentNode.id] = outputContext;
-        if (currentNode.data?.label) {
-          nodeOutputs[currentNode.data.label as string] = outputContext;
+      } else if (currentNode.type === 'code') {
+        const script = (currentNode.data?.code as string) || 'return output;';
+        logExecution(`[Code Node Executing] Script: ${script}`);
+        try {
+          const fn = new Function('output', 'outputs', script);
+          const resultVal = fn(outputContext, nodeOutputs);
+          outputContext = typeof resultVal === 'object' ? JSON.stringify(resultVal, null, 2) : String(resultVal ?? '');
+          logExecution(`[Code Node Output]: ${outputContext.slice(0, 200)}`);
+        } catch (e) {
+          outputContext = `Code execution error: ${(e as Error).message}`;
+          logExecution(`[Code Node Error]: ${(e as Error).message}`);
         }
+        nodeOutputs[currentNode.id] = outputContext;
+      } else if (currentNode.type === 'json') {
+        const jsonPath = (currentNode.data?.path as string) || '';
+        logExecution(`[JSON Node Executing] Path: ${jsonPath}`);
+        try {
+          const parsed = JSON.parse(outputContext);
+          if (jsonPath) {
+            // Simple path traversal e.g. results[0].url or data.name
+            const fn = new Function('data', `try { return data.${jsonPath}; } catch { return undefined; }`);
+            const extracted = fn(parsed);
+            outputContext = typeof extracted === 'object' ? JSON.stringify(extracted, null, 2) : String(extracted ?? '');
+          }
+          logExecution(`[JSON Node Output]: ${outputContext.slice(0, 200)}`);
+        } catch (e) {
+          outputContext = `JSON Extraction error: ${(e as Error).message}`;
+          logExecution(`[JSON Node Error]: ${(e as Error).message}`);
+        }
+        nodeOutputs[currentNode.id] = outputContext;
+      } else if (currentNode.type === 'output') {
+        logExecution(`[Output Node Executing] Format: ${currentNode.data?.format || 'text/plain'}`);
+        nodeOutputs[currentNode.id] = outputContext;
       } else if (currentNode.type === 'condition') {
         // Handled right before edge finding
       } else if (currentNode.type === 'llm') {

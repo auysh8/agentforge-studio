@@ -9,6 +9,7 @@ import { useFlowStore } from "@/store/flow-store";
 import { useCompletion } from "@ai-sdk/react";
 import { ExportModal } from "@/components/export-modal";
 import { SettingsModal } from "@/components/settings-modal";
+import { RunModal } from "@/components/run-modal";
 import {
   Download,
   Play,
@@ -23,6 +24,7 @@ import {
 export default function Home() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isRunModalOpen, setIsRunModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [activeView, setActiveView] = useState("canvas");
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
@@ -34,6 +36,8 @@ export default function Home() {
   const edges = useFlowStore((state) => state.edges);
   const loadGraph = useFlowStore((state) => state.loadGraph);
   const resetGraph = useFlowStore((state) => state.resetGraph);
+  const setNodeStatus = useFlowStore((state) => state.setNodeStatus);
+  const resetNodeStatuses = useFlowStore((state) => state.resetNodeStatuses);
 
   // Auto-open properties panel when a node is selected
   React.useEffect(() => {
@@ -107,6 +111,9 @@ export default function Home() {
       alert("Graph must contain at least a Trigger node.");
       return;
     }
+    resetNodeStatuses();
+    // Set all nodes in graph to running status during execution
+    graph.nodes.forEach((n) => setNodeStatus(n.id, "running"));
     setIsConsoleOpen(true);
 
     const headers: Record<string, string> = {};
@@ -123,7 +130,12 @@ export default function Home() {
       }
     }
 
-    await complete("", { body: graph, headers });
+    try {
+      await complete("", { body: graph, headers });
+      graph.nodes.forEach((n) => setNodeStatus(n.id, "success"));
+    } catch {
+      graph.nodes.forEach((n) => setNodeStatus(n.id, "error"));
+    }
   };
 
   return (
@@ -212,7 +224,7 @@ export default function Home() {
               Export MCP
             </button>
             <button
-              onClick={handleRunSkill}
+              onClick={() => setIsRunModalOpen(true)}
               disabled={isLoading}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
                 bg-gold text-gold-foreground hover:brightness-105 transition-all shadow-sm
@@ -267,6 +279,14 @@ export default function Home() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Run Modal */}
+      <RunModal
+        isOpen={isRunModalOpen}
+        onClose={() => setIsRunModalOpen(false)}
+        onRun={() => handleRunSkill()}
+        isLoading={isLoading}
       />
 
       {/* Toast */}

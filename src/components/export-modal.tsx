@@ -1,9 +1,10 @@
 "use client";
 
 import { useFlowStore } from "@/store/flow-store";
-import { Copy, Check, X, FileCode, FileJson, FileText } from "lucide-react";
+import { Copy, Check, X, FileCode, FileJson, FileText, Download } from "lucide-react";
 import { useState } from "react";
 import { type Node, type Edge } from "@xyflow/react";
+import JSZip from "jszip";
 
 function generateMCPCode(graph: { nodes: Node[], edges: Edge[] }) {
   const cleanedNodes = graph.nodes.map((n) => ({
@@ -188,6 +189,53 @@ ${systemPrompt}
 `;
 }
 
+function generateTsConfig() {
+  return `{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}`;
+}
+
+function generateReadme() {
+  return `# AgentForge MCP Skill Server
+
+Generated visually in AgentForge Studio.
+
+## Quick Start
+
+1. Install dependencies:
+   \`\`\`bash
+   npm install
+   \`\`\`
+
+2. Build the project:
+   \`\`\`bash
+   npm run build
+   \`\`\`
+
+3. Configure in Claude Desktop or Cursor:
+   \`\`\`json
+   {
+     "mcpServers": {
+       "agentforge-skill": {
+         "command": "node",
+         "args": ["/path/to/dist/server.js"]
+       }
+     }
+   }
+   \`\`\`
+`;
+}
+
 export function ExportModal({
   isOpen,
   onClose,
@@ -201,6 +249,7 @@ export function ExportModal({
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedJson, setCopiedJson] = useState(false);
   const [copiedMd, setCopiedMd] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
 
   let code = "";
   let pkg = "";
@@ -231,6 +280,31 @@ export function ExportModal({
     }
   };
 
+  const handleDownloadZip = async () => {
+    if (!graph) return;
+    setIsZipping(true);
+    try {
+      const zip = new JSZip();
+      zip.file("src/server.ts", code);
+      zip.file("package.json", pkg);
+      zip.file("SKILL.md", md);
+      zip.file("tsconfig.json", generateTsConfig());
+      zip.file("README.md", generateReadme());
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const downloadAnchor = document.createElement("a");
+      downloadAnchor.href = URL.createObjectURL(content);
+      downloadAnchor.download = `agentforge-mcp-server-${Date.now()}.zip`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    } catch (e) {
+      alert("Failed to generate zip file: " + (e as Error).message);
+    } finally {
+      setIsZipping(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -244,19 +318,29 @@ export function ExportModal({
             </h2>
             <p className="text-xs text-muted-foreground leading-relaxed max-w-lg">
               Your AI Skill is ready to run inside Claude Desktop, Cursor, and
-              any other MCP client! Save these files in a new directory, run{" "}
-              <code className="px-1.5 py-0.5 rounded-md bg-muted text-[10px] font-mono">
-                npm install
-              </code>
-              , and build the server.
+              any other MCP client! Download as a project `.zip` or copy individual files.
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0 -mt-1 -mr-1"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {graph && (
+              <button
+                onClick={handleDownloadZip}
+                disabled={isZipping}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold
+                  bg-gold text-gold-foreground hover:brightness-105 transition-all shadow-sm
+                  disabled:opacity-60"
+              >
+                <Download className="h-3.5 w-3.5" />
+                {isZipping ? "Creating Zip..." : "Download Project (.zip)"}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}

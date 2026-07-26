@@ -16,7 +16,10 @@ import {
   ChevronDown,
   Globe,
   Split,
-  Search
+  Search,
+  Code2,
+  FileJson,
+  Send,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -28,6 +31,7 @@ const nodeCategories = [
       { type: "trigger", label: "Trigger", icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.15)" },
       { type: "llm", label: "LLM Node", icon: Brain, color: "#A855F7", bg: "rgba(168, 85, 247, 0.15)" },
       { type: "prompt", label: "Prompt", icon: MessageSquare, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.15)" },
+      { type: "output", label: "Output Node", icon: Send, color: "#10B981", bg: "rgba(16, 185, 129, 0.15)" },
     ],
   },
   {
@@ -35,6 +39,8 @@ const nodeCategories = [
     name: "Logic & Flow",
     items: [
       { type: "condition", label: "Condition", icon: Split, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.15)" },
+      { type: "code", label: "Code Script", icon: Code2, color: "#06B6D4", bg: "rgba(6, 182, 212, 0.15)" },
+      { type: "json", label: "JSON Extractor", icon: FileJson, color: "#F97316", bg: "rgba(249, 115, 22, 0.15)" },
     ],
   },
   {

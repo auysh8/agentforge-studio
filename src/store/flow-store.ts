@@ -18,6 +18,7 @@ type FlowState = {
   nodes: Node[];
   edges: Edge[];
   selectedNode: Node | null;
+  nodeStatuses: Record<string, 'idle' | 'running' | 'success' | 'error'>;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -27,15 +28,55 @@ type FlowState = {
   deleteNode: (nodeId: string) => void;
   loadGraph: (graph: { nodes: Node[]; edges: Edge[] }) => void;
   resetGraph: () => void;
+  setNodeStatus: (nodeId: string, status: 'idle' | 'running' | 'success' | 'error') => void;
+  resetNodeStatuses: () => void;
   getExecutableGraph: () => { nodes: Node[]; edges: Edge[] } | null;
 };
+
+const defaultInitialNodes: Node[] = [
+  {
+    id: "trigger-1",
+    type: "trigger",
+    position: { x: 100, y: 180 },
+    data: { label: "User Prompt Trigger", eventType: "user_prompt" },
+  },
+  {
+    id: "api-1",
+    type: "api",
+    position: { x: 450, y: 150 },
+    data: {
+      label: "Exa Web Search",
+      endpoint: "https://api.exa.ai/search",
+      method: "POST",
+      headers: '{"x-api-key": "893ae3b5-4dbb-4782-bf71-ffd3248d8d15", "Content-Type": "application/json"}',
+      body: '{"query": "startups in delhi ncr", "numResults": 3}',
+    },
+  },
+  {
+    id: "llm-1",
+    type: "llm",
+    position: { x: 800, y: 150 },
+    data: {
+      label: "AI Synthesis",
+      provider: "mistral",
+      model: "mistral-large-latest",
+      systemPrompt: "Synthesize the search results concisely.",
+    },
+  },
+];
+
+const defaultInitialEdges: Edge[] = [
+  { id: "e1-2", source: "trigger-1", target: "api-1" },
+  { id: "e2-3", source: "api-1", target: "llm-1" },
+];
 
 export const useFlowStore = create<FlowState>()(
   persist(
     (set, get) => ({
-      nodes: [],
-      edges: [],
+      nodes: defaultInitialNodes,
+      edges: defaultInitialEdges,
       selectedNode: null,
+      nodeStatuses: {},
       onNodesChange: (changes: NodeChange[]) => {
         set({
           nodes: applyNodeChanges(changes, get().nodes),
@@ -85,14 +126,24 @@ export const useFlowStore = create<FlowState>()(
           nodes: graph.nodes || [],
           edges: graph.edges || [],
           selectedNode: null,
+          nodeStatuses: {},
         });
       },
       resetGraph: () => {
         set({
-          nodes: [],
-          edges: [],
+          nodes: defaultInitialNodes,
+          edges: defaultInitialEdges,
           selectedNode: null,
+          nodeStatuses: {},
         });
+      },
+      setNodeStatus: (nodeId: string, status: 'idle' | 'running' | 'success' | 'error') => {
+        set((state) => ({
+          nodeStatuses: { ...state.nodeStatuses, [nodeId]: status },
+        }));
+      },
+      resetNodeStatuses: () => {
+        set({ nodeStatuses: {} });
       },
       getExecutableGraph: () => {
         const { nodes, edges } = get();

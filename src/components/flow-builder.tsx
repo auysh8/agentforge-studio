@@ -19,6 +19,9 @@ import { LLMNode } from "./nodes/llm-node";
 import { PromptNode } from "./nodes/prompt-node";
 import { APINode } from "./nodes/api-node";
 import { ConditionNode } from "./nodes/condition-node";
+import { CodeNode } from "./nodes/code-node";
+import { JsonNode } from "./nodes/json-node";
+import { OutputNode } from "./nodes/output-node";
 
 const nodeTypes = {
   trigger: TriggerNode,
@@ -26,6 +29,9 @@ const nodeTypes = {
   prompt: PromptNode,
   api: APINode,
   condition: ConditionNode,
+  code: CodeNode,
+  json: JsonNode,
+  output: OutputNode,
 };
 
 const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -65,6 +71,9 @@ function FlowBuilderContent() {
         };
       if (type === "api") defaultData = { ...defaultData, method: "GET", url: "https://api.example.com/data" };
       if (type === "condition") defaultData = { ...defaultData, condition: "output.contains('error')" };
+      if (type === "code") defaultData = { ...defaultData, code: "return output.toUpperCase();" };
+      if (type === "json") defaultData = { ...defaultData, path: "results[0].title" };
+      if (type === "output") defaultData = { ...defaultData, format: "text/plain" };
 
       const newNode = {
         id: getId(),

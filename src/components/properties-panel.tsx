@@ -4,7 +4,7 @@ import { useFlowStore } from "@/store/flow-store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Play, Brain, MessageSquare, Globe, Split } from "lucide-react";
+import { Trash2, Play, Brain, MessageSquare, Globe, Split, Code2, FileJson, Send } from "lucide-react";
 
 const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   trigger: { icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.12)", label: "Trigger" },
@@ -12,6 +12,9 @@ const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; b
   prompt: { icon: MessageSquare, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.12)", label: "Prompt" },
   api: { icon: Globe, color: "#EC4899", bg: "rgba(236, 72, 153, 0.12)", label: "API Request" },
   condition: { icon: Split, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.12)", label: "Condition" },
+  code: { icon: Code2, color: "#06B6D4", bg: "rgba(6, 182, 212, 0.12)", label: "Code Script" },
+  json: { icon: FileJson, color: "#F97316", bg: "rgba(249, 115, 22, 0.12)", label: "JSON Extractor" },
+  output: { icon: Send, color: "#10B981", bg: "rgba(16, 185, 129, 0.12)", label: "Output Node" },
 };
 
 export function PropertiesPanel() {
@@ -238,6 +241,69 @@ export function PropertiesPanel() {
           <p className="text-[10px] text-muted-foreground/60 leading-tight">
             Use Javascript-like syntax to evaluate variables coming into this node.
           </p>
+        </div>
+      )}
+
+      {/* Code Script */}
+      {selectedNode.type === "code" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="node-code" className="text-xs font-medium text-muted-foreground">
+            JavaScript Script
+          </Label>
+          <Textarea
+            id="node-code"
+            value={(selectedNode.data.code as string) || ""}
+            onChange={(e) =>
+              updateNodeData(selectedNode.id, { code: e.target.value })
+            }
+            className="h-[180px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm font-mono"
+            placeholder="return output.toUpperCase();"
+          />
+          <p className="text-[10px] text-muted-foreground/60 leading-tight">
+            Use <code className="font-mono">output</code> or <code className="font-mono">outputs</code> to read previous node results.
+          </p>
+        </div>
+      )}
+
+      {/* JSON Extractor */}
+      {selectedNode.type === "json" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="node-json-path" className="text-xs font-medium text-muted-foreground">
+            JSON Path / Key
+          </Label>
+          <Input
+            id="node-json-path"
+            value={(selectedNode.data.path as string) || ""}
+            onChange={(e) =>
+              updateNodeData(selectedNode.id, { path: e.target.value })
+            }
+            placeholder="results[0].url"
+            className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+          />
+          <p className="text-[10px] text-muted-foreground/60 leading-tight">
+            e.g. <code className="font-mono">results[0].title</code> or <code className="font-mono">data.user.name</code>
+          </p>
+        </div>
+      )}
+
+      {/* Output Node */}
+      {selectedNode.type === "output" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="node-output-format" className="text-xs font-medium text-muted-foreground">
+            Output Format
+          </Label>
+          <select
+            id="node-output-format"
+            value={(selectedNode.data.format as string) || "text/plain"}
+            onChange={(e) =>
+              updateNodeData(selectedNode.id, { format: e.target.value })
+            }
+            className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
+          >
+            <option value="text/plain">Plain Text</option>
+            <option value="application/json">JSON Object</option>
+            <option value="text/markdown">Markdown Format</option>
+          </select>
         </div>
       )}
 
