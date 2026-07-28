@@ -71,24 +71,6 @@ agentforge-studio/
 
 ---
 
-## 🏗️ Architecture & Data Flow
-
-```mermaid
-graph TD
-    A[User UI / Sidebar] -->|Add Node / Connect| B[Flow Builder Canvas]
-    B <-->|State Updates| C[Zustand Flow Store]
-    C --> D[Properties Panel]
-    B -->|Execute Flow Request| E[API Route /api/execute]
-    E --> F{Node Processors}
-    F -->|Trigger| G[Initial Inputs]
-    F -->|Prompt / LLM| H[Language Model Query]
-    F -->|Condition| I[Logic Evaluation]
-    F -->|API Node| J[HTTP Webhook/API Call]
-    E -->|Stream / Return Results| K[Console Output Panel]
-```
-
----
-
 ## 🛠️ Tech Stack
 
 | Category | Technologies |
