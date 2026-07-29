@@ -18,6 +18,7 @@ const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; b
 };
 
 export function PropertiesPanel() {
+  const nodes = useFlowStore((state) => state.nodes);
   const selectedNode = useFlowStore((state) => state.selectedNode);
   const updateNodeData = useFlowStore((state) => state.updateNodeData);
   const deleteNode = useFlowStore((state) => state.deleteNode);
@@ -34,6 +35,16 @@ export function PropertiesPanel() {
       </div>
     );
   }
+
+  const availableVariables = nodes
+    .filter((n) => n.id !== selectedNode.id)
+    .map((n) => (n.data?.label as string) || n.id)
+    .filter(Boolean);
+
+  const insertVariable = (fieldName: string, varText: string) => {
+    const currentVal = (selectedNode.data[fieldName] as string) || "";
+    updateNodeData(selectedNode.id, { [fieldName]: currentVal ? `${currentVal} ${varText}` : varText });
+  };
 
   const config = nodeTypeConfig[selectedNode.type || ""] || nodeTypeConfig.prompt;
   const IconComp = config.icon;
@@ -89,6 +100,9 @@ export function PropertiesPanel() {
             className="rounded-xl bg-cream border-warm-border h-9 text-sm"
           />
           <datalist id="model-list">
+            <option value="gemini-2.0-flash" />
+            <option value="gemini-1.5-flash" />
+            <option value="gemini-1.5-pro" />
             <option value="gpt-4o" />
             <option value="gpt-4o-mini" />
             <option value="gpt-4-turbo" />
@@ -103,11 +117,9 @@ export function PropertiesPanel() {
             <option value="mistral" />
             <option value="gemma" />
             <option value="phi3" />
-            <option value="gemini-1.5-pro" />
-            <option value="gemini-1.5-flash" />
           </datalist>
           <p className="text-[10px] text-muted-foreground/60">
-            e.g. gpt-4o, mistral-large-latest, llama3
+            e.g. gemini-2.0-flash, gpt-4o, mistral-large-latest
           </p>
         </div>
       )}
@@ -124,11 +136,28 @@ export function PropertiesPanel() {
             onChange={(e) =>
               updateNodeData(selectedNode.id, { prompt: e.target.value })
             }
-            className="h-[280px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm"
+            className="h-[240px] resize-none overflow-y-auto rounded-xl bg-cream border-warm-border text-sm"
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             style={{ fieldSizing: "fixed" } as any}
             placeholder="Type your system prompt here..."
           />
+          {availableVariables.length > 0 && (
+            <div className="space-y-1 pt-1">
+              <p className="text-[11px] font-medium text-muted-foreground">Available Variables (click to insert):</p>
+              <div className="flex flex-wrap gap-1.5">
+                {availableVariables.map((vName) => (
+                  <button
+                    key={vName}
+                    type="button"
+                    onClick={() => insertVariable("prompt", `{{${vName}}}`)}
+                    className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-[11px] font-mono text-primary transition-colors"
+                  >
+                    + {`{{${vName}}}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -288,22 +317,60 @@ export function PropertiesPanel() {
 
       {/* Output Node */}
       {selectedNode.type === "output" && (
-        <div className="space-y-1.5">
-          <Label htmlFor="node-output-format" className="text-xs font-medium text-muted-foreground">
-            Output Format
-          </Label>
-          <select
-            id="node-output-format"
-            value={(selectedNode.data.format as string) || "text/plain"}
-            onChange={(e) =>
-              updateNodeData(selectedNode.id, { format: e.target.value })
-            }
-            className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
-          >
-            <option value="text/plain">Plain Text</option>
-            <option value="application/json">JSON Object</option>
-            <option value="text/markdown">Markdown Format</option>
-          </select>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-output-format" className="text-xs font-medium text-muted-foreground">
+              Output Format
+            </Label>
+            <select
+              id="node-output-format"
+              value={(selectedNode.data.format as string) || "text/plain"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { format: e.target.value })
+              }
+              className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
+            >
+              <option value="text/plain">Plain Text</option>
+              <option value="application/json">JSON Object</option>
+              <option value="text/markdown">Markdown Format</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="node-output-template" className="text-xs font-medium text-muted-foreground">
+              Response Template (Optional)
+            </Label>
+            <textarea
+              id="node-output-template"
+              rows={4}
+              value={(selectedNode.data.template as string) || (selectedNode.data.body as string) || ""}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { template: e.target.value })
+              }
+              placeholder="e.g. {{Generate README Text}}"
+              className="w-full rounded-xl bg-cream border border-warm-border p-3 text-sm font-mono placeholder:text-muted-foreground/50 resize-y min-h-[90px]"
+            />
+            {availableVariables.length > 0 && (
+              <div className="space-y-1 pt-1">
+                <p className="text-[11px] font-medium text-muted-foreground">Available Variables (click to insert):</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {availableVariables.map((vName) => (
+                    <button
+                      key={vName}
+                      type="button"
+                      onClick={() => insertVariable("template", `{{${vName}}}`)}
+                      className="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-[11px] font-mono text-primary transition-colors"
+                    >
+                      + {`{{${vName}}}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground">
+              Use <code className="font-mono">{"{{Node Label}}"}</code> to combine outputs from previous nodes.
+            </p>
+          </div>
         </div>
       )}
 

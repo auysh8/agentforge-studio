@@ -38,9 +38,22 @@ const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).substr(2
 
 function FlowBuilderContent() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, addNode } =
+  const { nodes, edges, nodeStatuses, onNodesChange, onEdgesChange, onConnect, addNode } =
     useFlowStore();
   const { screenToFlowPosition } = useReactFlow();
+
+  const formattedEdges = edges.map((edge) => {
+    const sourceStatus = nodeStatuses[edge.source];
+    const targetStatus = nodeStatuses[edge.target];
+    const isExecuting = sourceStatus === "running" || targetStatus === "running";
+    const isCompleted = sourceStatus === "success" && targetStatus === "success";
+
+    return {
+      ...edge,
+      animated: isExecuting || isCompleted,
+      className: isExecuting ? "active-execution" : isCompleted ? "animated" : "",
+    };
+  });
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -91,7 +104,7 @@ function FlowBuilderContent() {
     <div className="w-full h-full" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={formattedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}

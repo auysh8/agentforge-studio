@@ -131,8 +131,8 @@ export const useFlowStore = create<FlowState>()(
       },
       resetGraph: () => {
         set({
-          nodes: defaultInitialNodes,
-          edges: defaultInitialEdges,
+          nodes: [],
+          edges: [],
           selectedNode: null,
           nodeStatuses: {},
         });

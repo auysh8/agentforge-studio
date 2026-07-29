@@ -8,7 +8,7 @@ export function LLMNode({ id, data }: NodeProps) {
   return (
     <div
       className={`rounded-2xl border shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-all duration-200 ${
-        status === "running" ? "ring-4 ring-gold animate-pulse" : ""
+        status === "running" ? "ring-4 ring-gold executing-node-glow" : ""
       }`}
       style={{
         background: "linear-gradient(rgba(242, 164, 184, 0.10), rgba(242, 164, 184, 0.10)), var(--color-card)",

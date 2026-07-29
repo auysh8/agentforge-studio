@@ -8,7 +8,7 @@ export function PromptNode({ id, data }: NodeProps) {
   return (
     <div
       className={`rounded-2xl border bg-card shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-all duration-200 ${
-        status === "running" ? "ring-4 ring-gold animate-pulse" : ""
+        status === "running" ? "ring-4 ring-gold executing-node-glow" : ""
       }`}
       style={{
         borderColor: status === "running" ? "var(--color-gold)" : "var(--color-warm-border)",

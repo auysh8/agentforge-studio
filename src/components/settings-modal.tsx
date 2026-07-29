@@ -12,8 +12,10 @@ interface SettingsModalProps {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [openaiKey, setOpenaiKey] = useState("");
+  const [googleKey, setGoogleKey] = useState("");
   const [mistralKey, setMistralKey] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434/api");
+  const [defaultModel, setDefaultModel] = useState("gemini-2.0-flash");
   const [savedToast, setSavedToast] = useState(false);
 
   useEffect(() => {
@@ -23,8 +25,10 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         try {
           const parsed = JSON.parse(savedSettings);
           if (parsed.openaiKey) setOpenaiKey(parsed.openaiKey);
+          if (parsed.googleKey) setGoogleKey(parsed.googleKey);
           if (parsed.mistralKey) setMistralKey(parsed.mistralKey);
           if (parsed.ollamaUrl) setOllamaUrl(parsed.ollamaUrl);
+          if (parsed.defaultModel) setDefaultModel(parsed.defaultModel);
         } catch {
           // Ignore parse errors
         }
@@ -38,10 +42,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         "agentforge-settings",
         JSON.stringify({
           openaiKey,
+          googleKey,
           mistralKey,
           ollamaUrl,
+          defaultModel,
         })
       );
+
       setSavedToast(true);
       setTimeout(() => {
         setSavedToast(false);
@@ -79,6 +86,22 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <div className="flex items-center gap-2 p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400">
             <ShieldCheck className="h-4 w-4 shrink-0" />
             <span>API keys are stored securely in your browser&apos;s LocalStorage.</span>
+          </div>
+
+          {/* Google AI Studio Key */}
+          <div className="space-y-1.5">
+            <Label htmlFor="google-key" className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span>Google AI Studio Key (Gemini)</span>
+              <span className="text-[10px] text-muted-foreground font-normal">AIzaSy...</span>
+            </Label>
+            <Input
+              id="google-key"
+              type="password"
+              placeholder="AIzaSy..."
+              value={googleKey}
+              onChange={(e) => setGoogleKey(e.target.value)}
+              className="rounded-xl bg-cream border-warm-border h-10 text-sm font-mono"
+            />
           </div>
 
           {/* OpenAI Key */}
@@ -127,6 +150,39 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               onChange={(e) => setOllamaUrl(e.target.value)}
               className="rounded-xl bg-cream border-warm-border h-10 text-sm font-mono"
             />
+          </div>
+
+          {/* Default AI Model */}
+          <div className="space-y-1.5 pt-2 border-t border-warm-border">
+            <Label htmlFor="default-model" className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span>Default AI Model (for background tasks)</span>
+              <span className="text-[10px] text-muted-foreground font-normal">e.g. gemini-2.0-flash</span>
+            </Label>
+            <Input
+              id="default-model"
+              type="text"
+              placeholder="gemini-2.0-flash"
+              value={defaultModel}
+              onChange={(e) => setDefaultModel(e.target.value)}
+              className="rounded-xl bg-cream border-warm-border h-10 text-sm font-mono"
+            />
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-[10px] text-muted-foreground">Presets:</span>
+              {["gemini-2.0-flash", "gemini-1.5-flash", "gpt-4o-mini", "mistral-small-latest"].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setDefaultModel(preset)}
+                  className={`text-[10px] px-2 py-0.5 rounded-md border transition-all ${
+                    defaultModel === preset
+                      ? "bg-gold/20 text-gold border-gold/40 font-semibold"
+                      : "bg-muted/40 text-muted-foreground border-warm-border hover:bg-muted"
+                  }`}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 

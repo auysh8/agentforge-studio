@@ -112,9 +112,22 @@ export default function Home() {
       return;
     }
     resetNodeStatuses();
-    // Set all nodes in graph to running status during execution
-    graph.nodes.forEach((n) => setNodeStatus(n.id, "running"));
     setIsConsoleOpen(true);
+
+    // Stagger node execution statuses to create a visual data flow progression across nodes
+    const nodesInFlow = graph.nodes;
+    let currentIdx = 0;
+    setNodeStatus(nodesInFlow[0].id, "running");
+
+    const statusInterval = setInterval(() => {
+      if (currentIdx < nodesInFlow.length - 1) {
+        setNodeStatus(nodesInFlow[currentIdx].id, "success");
+        currentIdx++;
+        setNodeStatus(nodesInFlow[currentIdx].id, "running");
+      } else {
+        clearInterval(statusInterval);
+      }
+    }, 800);
 
     const headers: Record<string, string> = {};
     if (typeof window !== "undefined") {
@@ -123,6 +136,7 @@ export default function Home() {
         try {
           const parsed = JSON.parse(savedSettings);
           if (parsed.openaiKey) headers["x-openai-api-key"] = parsed.openaiKey;
+          if (parsed.googleKey) headers["x-google-api-key"] = parsed.googleKey;
           if (parsed.mistralKey) headers["x-mistral-api-key"] = parsed.mistralKey;
         } catch {
           // ignore error
@@ -132,8 +146,10 @@ export default function Home() {
 
     try {
       await complete("", { body: graph, headers });
+      clearInterval(statusInterval);
       graph.nodes.forEach((n) => setNodeStatus(n.id, "success"));
     } catch {
+      clearInterval(statusInterval);
       graph.nodes.forEach((n) => setNodeStatus(n.id, "error"));
     }
   };

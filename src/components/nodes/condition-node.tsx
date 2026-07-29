@@ -8,7 +8,7 @@ export function ConditionNode({ id, data }: NodeProps) {
   return (
     <div
       className={`rounded-2xl border shadow-sm min-w-[210px] max-w-[260px] overflow-hidden transition-all duration-200 relative ${
-        status === "running" ? "ring-4 ring-gold animate-pulse" : ""
+        status === "running" ? "ring-4 ring-gold executing-node-glow" : ""
       }`}
       style={{
         background: "linear-gradient(rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.05)), var(--color-card)",

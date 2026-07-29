@@ -11,7 +11,7 @@ export function CodeNode({ id, data, selected }: NodeProps) {
     <div
       className={`min-w-[200px] rounded-2xl bg-card border transition-all duration-200 shadow-sm relative ${
         selected ? "border-gold ring-2 ring-gold/20" : "border-warm-border"
-      } ${status === "running" ? "ring-4 ring-gold animate-pulse" : ""}`}
+      } ${status === "running" ? "ring-4 ring-gold executing-node-glow" : ""}`}
     >
       {/* Node Header */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-warm-border/60 bg-muted/20 rounded-t-2xl">
