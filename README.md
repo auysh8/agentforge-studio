@@ -19,8 +19,6 @@
 
 ![AgentForge Studio Interface](public/preview.png)
 
-> *Tip: Take a screenshot of your flow builder canvas with active nodes and save it as `public/preview.png` to render your live app interface here.*
-
 ---
 
 ## ✨ Features
