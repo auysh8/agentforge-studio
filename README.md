@@ -2,15 +2,16 @@
 
 > **A visual workflow builder and execution environment for designing, testing, and deploying AI agent orchestration pipelines.**
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://agentforge-studio-lime.vercel.app)
 [![GitHub Stars](https://img.shields.io/github/stars/auysh8/agentforge-studio?style=for-the-badge&logo=github&color=gold)](https://github.com/auysh8/agentforge-studio/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![React Flow](https://img.shields.io/badge/React_Flow-FF007A?style=for-the-badge&logo=reactflow&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 
 ---
 
+### 🌐 **Try the Live App**: [https://agentforge-studio-lime.vercel.app](https://agentforge-studio-lime.vercel.app)
 ### ⭐️ **If you find AgentForge Studio useful, please give us a star on GitHub! It helps the project grow.** ⭐️
 
 ---
@@ -54,10 +55,8 @@ agentforge-studio/
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-- **Node.js**: `v18.x` or higher
-- **npm**: `v9.x` or higher
+### Live Demo
+Try it instantly in your browser without installing anything: [https://agentforge-studio-lime.vercel.app](https://agentforge-studio-lime.vercel.app)
 
 ### Local Setup
 
