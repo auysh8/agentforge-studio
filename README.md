@@ -1,86 +1,56 @@
 # AgentForge Studio 🛠️
 
-A visual workflow builder and execution environment for designing, testing, and deploying custom AI agent orchestration pipelines.
+> **A visual workflow builder and execution environment for designing, testing, and deploying AI agent orchestration pipelines.**
 
+[![GitHub Stars](https://img.shields.io/github/stars/auysh8/agentforge-studio?style=for-the-badge&logo=github&color=gold)](https://github.com/auysh8/agentforge-studio/stargazers)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![React Flow](https://img.shields.io/badge/React_Flow-FF007A?style=for-the-badge&logo=reactflow&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+
+---
+
+### ⭐️ **If you find AgentForge Studio useful, please give us a star on GitHub! It helps the project grow.** ⭐️
 
 ---
 
 ## 📸 Visual Preview
 
-> 💡 Add a screenshot at `docs/preview.png` to display it here.
-![Preview](https://placehold.co/800x420/1e1e2e/cdd6f4?text=Add+App+Screenshot)
+![AgentForge Studio Interface](public/preview.png)
+
+> *Tip: Take a screenshot of your flow builder canvas with active nodes and save it as `public/preview.png` to render your live app interface here.*
 
 ---
 
 ## ✨ Features
 
-- 🎨 **Visual Flow Builder**: Drag and drop node-based canvas to seamlessly map complex multi-step agent workflows.
-- 🤖 **LLM & Agent Nodes**: Integrate Large Language Models into pipeline execution paths with granular parameter management.
-- 🔀 **Conditional Branching**: Build decision trees with dedicated condition and logic evaluation nodes.
-- 🌐 **External API Nodes**: Connect external services and HTTP endpoints directly into your workflow execution loop.
-- 💻 **Live Console Output**: Monitor execution steps, real-time outputs, and system logs with an integrated console panel.
-- 📦 **Workflow Exporting**: Modular export modal to export and integrate workflow configurations into external applications.
+- 🎨 **Visual Flow Builder**: Interactive drag-and-drop node canvas powered by `@xyflow/react`.
+- 🤖 **Multi-Provider LLM Nodes**: Native support for OpenAI, Mistral, Google Gemini, and local Ollama models.
+- 🔀 **Conditional Branching**: Smart decision trees with condition logic evaluation nodes.
+- 🌐 **External API Nodes**: Integrate third-party HTTP endpoints directly into execution graphs.
+- 💻 **Real-Time Console Panel**: Inspect step execution, output streams, and debug logs live.
+- 📦 **Modular Workflow Export**: Instantly export flow configurations to JSON or runtime SDK code.
 
 ---
 
-## 📂 Repository Structure
+## 🏗️ Architecture & Stack
+
+AgentForge Studio combines Next.js App Router for serverless execution with React Flow and Zustand for reactive visual node graphs:
 
 ```
 agentforge-studio/
-├── public/
-│   ├── file.svg
-│   ├── globe.svg
-│   └── window.svg
 ├── src/
 │   ├── app/
-│   │   ├── api/
-│   │   │   └── execute/
-│   │   │       └── route.ts
-│   │   ├── globals.css
-│   │   ├── layout.tsx
-│   │   └── page.tsx
+│   │   ├── api/execute/    # Serverless execution pipeline endpoint
+│   │   └── page.tsx        # Main Studio workspace dashboard
 │   ├── components/
-│   │   ├── nodes/
-│   │   │   ├── api-node.tsx
-│   │   │   ├── condition-node.tsx
-│   │   │   ├── llm-node.tsx
-│   │   │   ├── prompt-node.tsx
-│   │   │   └── trigger-node.tsx
-│   │   ├── ui/
-│   │   │   ├── button.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── resizable.tsx
-│   │   │   └── scroll-area.tsx
-│   │   ├── console-panel.tsx
-│   │   ├── export-modal.tsx
-│   │   ├── flow-builder.tsx
-│   │   ├── properties-panel.tsx
-│   │   └── sidebar.tsx
+│   │   ├── nodes/          # Custom node visual components (LLM, API, Condition)
+│   │   ├── flow-builder.tsx# React Flow canvas wrapper
+│   │   └── console-panel.tsx# Live execution output log viewer
 │   └── store/
-│       └── flow-store.ts
-├── components.json
-├── next.config.ts
-├── package.json
-└── tsconfig.json
+│       └── flow-store.ts   # Zustand state manager for node states & execution
 ```
-
----
-
-## 🛠️ Tech Stack
-
-| Category | Technologies |
-| :--- | :--- |
-| **Framework** | Next.js (App Router) |
-| **Language** | TypeScript |
-| **Styling** | Tailwind CSS, PostCSS |
-| **UI Components** | Radix UI / Shadcn UI |
-| **State Management** | Zustand (`flow-store.ts`) |
-| **Execution** | Next.js Serverless API Routes (`/api/execute`) |
 
 ---
 
@@ -88,11 +58,10 @@ agentforge-studio/
 
 ### Prerequisites
 
-Ensure you have the following installed on your machine:
 - **Node.js**: `v18.x` or higher
-- **npm**: `v9.x` or higher (or `pnpm` / `yarn`)
+- **npm**: `v9.x` or higher
 
-### Installation & Local Setup
+### Local Setup
 
 1. **Clone the repository:**
    ```bash
@@ -105,39 +74,25 @@ Ensure you have the following installed on your machine:
    npm install
    ```
 
-3. **Start the development server:**
+3. **Start the dev server:**
    ```bash
    npm run dev
    ```
 
-4. **Open in browser:**
-   Navigate to [http://localhost:3000](http://localhost:3000) to view the application.
-
----
-
-## 📖 Available Scripts
-
-| Command | Description |
-| :--- | :--- |
-| `npm run dev` | Launches the local development server with hot-reloading |
-| `npm run build` | Compiles and builds the production application |
-| `npm run start` | Runs the production build server |
-| `npm run lint` | Runs ESLint to check for code formatting and quality issues |
+4. **Open in Browser:**
+   Navigate to [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Follow these steps to contribute:
+Contributions of all sizes are welcome! Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
-1. **Fork** the repository.
-2. **Create** a new feature branch (`git checkout -b feature/amazing-feature`).
-3. **Commit** your changes (`git commit -m 'Add some amazing feature'`).
-4. **Push** to the branch (`git push origin feature/amazing-feature`).
-5. **Open** a Pull Request against the `main` branch.
+- 🐛 **Found a bug?** Open a [Bug Report](https://github.com/auysh8/agentforge-studio/issues/new?template=bug_report.md)
+- 💡 **Have a feature idea?** Submit a [Feature Request](https://github.com/auysh8/agentforge-studio/issues/new?template=feature_request.md)
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+Distributed under the [MIT License](LICENSE).
