@@ -1,7 +1,8 @@
 "use client";
 
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { GitFork, Check, AlertCircle } from "lucide-react";
+import { GitBranch } from "@phosphor-icons/react";
+import { Check, AlertCircle } from "lucide-react";
 import { useFlowStore } from "@/store/flow-store";
 
 export function ConditionNode({ id, data, selected }: NodeProps) {
@@ -26,9 +27,9 @@ export function ConditionNode({ id, data, selected }: NodeProps) {
         <div className="flex items-start gap-2.5 min-w-0 text-left">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-            style={{ backgroundColor: "#FAEEDA", color: "#854F0B" }}
+            style={{ backgroundColor: "#FAEEDA" }}
           >
-            <GitFork className="w-4 h-4" />
+            <GitBranch size={18} weight="fill" style={{ color: "#854F0B" }} />
           </div>
           <div className="min-w-0 flex-1 text-left">
             <h3 className="text-[14px] font-medium text-foreground truncate text-left">

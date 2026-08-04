@@ -1,7 +1,8 @@
 "use client";
 
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { Play, Check, AlertCircle } from "lucide-react";
+import { Play } from "@phosphor-icons/react";
+import { Check, AlertCircle } from "lucide-react";
 import { useFlowStore } from "@/store/flow-store";
 
 export function TriggerNode({ id, data, selected }: NodeProps) {
@@ -19,9 +20,9 @@ export function TriggerNode({ id, data, selected }: NodeProps) {
         <div className="flex items-start gap-2.5 min-w-0 text-left">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-            style={{ backgroundColor: "#EAF3DE", color: "#27500A" }}
+            style={{ backgroundColor: "#EAF3DE" }}
           >
-            <Play className="w-4 h-4 fill-current" />
+            <Play size={18} weight="fill" style={{ color: "#27500A" }} />
           </div>
           <div className="min-w-0 flex-1 text-left">
             <h3 className="text-[14px] font-medium text-foreground truncate text-left">

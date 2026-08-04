@@ -1,7 +1,8 @@
 "use client";
 
 import { Handle, Position, NodeProps } from "@xyflow/react";
-import { MessageSquare, Check, AlertCircle } from "lucide-react";
+import { ChatCircle } from "@phosphor-icons/react";
+import { Check, AlertCircle } from "lucide-react";
 import { useFlowStore } from "@/store/flow-store";
 
 export function PromptNode({ id, data, selected }: NodeProps) {
@@ -26,9 +27,9 @@ export function PromptNode({ id, data, selected }: NodeProps) {
         <div className="flex items-start gap-2.5 min-w-0 text-left">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-            style={{ backgroundColor: "#EEEDFE", color: "#3C3489" }}
+            style={{ backgroundColor: "#EEEDFE" }}
           >
-            <MessageSquare className="w-4 h-4" />
+            <ChatCircle size={18} weight="fill" style={{ color: "#3C3489" }} />
           </div>
           <div className="min-w-0 flex-1 text-left">
             <h3 className="text-[14px] font-medium text-foreground truncate text-left">

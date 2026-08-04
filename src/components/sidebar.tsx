@@ -3,9 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Blocks,
-  Brain,
-  MessageSquare,
-  Play,
   Terminal,
   Settings,
   Moon,
@@ -14,13 +11,18 @@ import {
   LayoutGrid,
   ChevronRight,
   ChevronDown,
-  Globe,
-  Split,
   Search,
-  Code2,
-  FileJson,
-  Send,
 } from "lucide-react";
+import {
+  Play,
+  Brain,
+  ChatCircle,
+  PaperPlaneTilt,
+  GitBranch,
+  Code,
+  BracketsCurly,
+  Globe,
+} from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 
 const nodeCategories = [
@@ -30,17 +32,17 @@ const nodeCategories = [
     items: [
       { type: "trigger", label: "Trigger", icon: Play, color: "#27500A", bg: "#EAF3DE" },
       { type: "llm", label: "LLM Node", icon: Brain, color: "#3C3489", bg: "#EEEDFE" },
-      { type: "prompt", label: "Prompt", icon: MessageSquare, color: "#3C3489", bg: "#EEEDFE" },
-      { type: "output", label: "Output Node", icon: Send, color: "#712B13", bg: "#FAECE7" },
+      { type: "prompt", label: "Prompt", icon: ChatCircle, color: "#3C3489", bg: "#EEEDFE" },
+      { type: "output", label: "Output Node", icon: PaperPlaneTilt, color: "#712B13", bg: "#FAECE7" },
     ],
   },
   {
     id: "logic",
     name: "Logic & Flow",
     items: [
-      { type: "condition", label: "Condition", icon: Split, color: "#854F0B", bg: "#FAEEDA" },
-      { type: "code", label: "Code Script", icon: Code2, color: "#085041", bg: "#E1F5EE" },
-      { type: "json", label: "JSON Extractor", icon: FileJson, color: "#085041", bg: "#E1F5EE" },
+      { type: "condition", label: "Condition", icon: GitBranch, color: "#854F0B", bg: "#FAEEDA" },
+      { type: "code", label: "Code Script", icon: Code, color: "#085041", bg: "#E1F5EE" },
+      { type: "json", label: "JSON Extractor", icon: BracketsCurly, color: "#085041", bg: "#E1F5EE" },
     ],
   },
   {
@@ -187,7 +189,7 @@ export function Sidebar({
                         className="w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-110 shadow-sm"
                         style={{ backgroundColor: item.bg }}
                       >
-                        <item.icon className="h-3 w-3" style={{ color: item.color }} />
+                        <item.icon size={14} weight="fill" style={{ color: item.color }} />
                       </div>
                       <span className="text-[12px] font-medium flex-1">{item.label}</span>
                       <Blocks className="h-3 w-3 opacity-0 group-hover:opacity-20 transition-opacity" />

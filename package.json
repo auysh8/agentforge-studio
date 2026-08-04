@@ -15,6 +15,7 @@
     "@ai-sdk/react": "^4.0.34",
     "@base-ui/react": "^1.6.0",
     "@monaco-editor/react": "^4.7.0",
+    "@phosphor-icons/react": "^2.1.10",
     "@xyflow/react": "^12.11.2",
     "ai": "^7.0.31",
     "class-variance-authority": "^0.7.1",
