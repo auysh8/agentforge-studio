@@ -125,17 +125,21 @@ function FlowBuilderContent() {
           nodeColor={(node) => {
             switch (node.type) {
               case "trigger":
-                return "#F5D56E";
-              case "prompt":
-                return "#8BB4E0";
+                return "#3B6D11";
               case "llm":
-                return "#F2A4B8";
-              case "api":
-                return "#F472B6"; // pink-400
+              case "prompt":
+                return "#3C3489";
               case "condition":
-                return "#FBBF24"; // amber-400
+                return "#854F0B";
+              case "api":
+                return "#185FA5";
+              case "json":
+              case "code":
+                return "#085041";
+              case "output":
+                return "#712B13";
               default:
-                return "var(--color-foreground)";
+                return "#1C1C1E";
             }
           }}
         />

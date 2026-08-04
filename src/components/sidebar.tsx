@@ -28,26 +28,26 @@ const nodeCategories = [
     id: "core",
     name: "Core Nodes",
     items: [
-      { type: "trigger", label: "Trigger", icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.15)" },
-      { type: "llm", label: "LLM Node", icon: Brain, color: "#A855F7", bg: "rgba(168, 85, 247, 0.15)" },
-      { type: "prompt", label: "Prompt", icon: MessageSquare, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.15)" },
-      { type: "output", label: "Output Node", icon: Send, color: "#10B981", bg: "rgba(16, 185, 129, 0.15)" },
+      { type: "trigger", label: "Trigger", icon: Play, color: "#27500A", bg: "#EAF3DE" },
+      { type: "llm", label: "LLM Node", icon: Brain, color: "#3C3489", bg: "#EEEDFE" },
+      { type: "prompt", label: "Prompt", icon: MessageSquare, color: "#3C3489", bg: "#EEEDFE" },
+      { type: "output", label: "Output Node", icon: Send, color: "#712B13", bg: "#FAECE7" },
     ],
   },
   {
     id: "logic",
     name: "Logic & Flow",
     items: [
-      { type: "condition", label: "Condition", icon: Split, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.15)" },
-      { type: "code", label: "Code Script", icon: Code2, color: "#06B6D4", bg: "rgba(6, 182, 212, 0.15)" },
-      { type: "json", label: "JSON Extractor", icon: FileJson, color: "#F97316", bg: "rgba(249, 115, 22, 0.15)" },
+      { type: "condition", label: "Condition", icon: Split, color: "#854F0B", bg: "#FAEEDA" },
+      { type: "code", label: "Code Script", icon: Code2, color: "#085041", bg: "#E1F5EE" },
+      { type: "json", label: "JSON Extractor", icon: FileJson, color: "#085041", bg: "#E1F5EE" },
     ],
   },
   {
     id: "integration",
     name: "Integrations",
     items: [
-      { type: "api", label: "API Request", icon: Globe, color: "#EC4899", bg: "rgba(236, 72, 153, 0.15)" },
+      { type: "api", label: "API Request", icon: Globe, color: "#185FA5", bg: "#E6F1FB" },
     ],
   },
 ];
