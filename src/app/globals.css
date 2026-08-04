@@ -392,45 +392,71 @@
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Subtle, Premium Node Glow & String Animations */
-@keyframes subtleNodeGlow {
-  0%, 100% {
-    box-shadow: 0 0 14px 2px rgba(245, 213, 110, 0.35), 0 2px 10px rgba(0, 0, 0, 0.05);
-    border-color: #F5D56E !important;
+/* Node Running — Minimal Indeterminate Progress Bar */
+/* A slim 2px strip slides left-to-right along the node's top edge.
+   Pure translateX: GPU-composited, zero layout impact, no scale/shadow/shine. */
+@keyframes nodeProgressBar {
+  0% {
+    transform: translateX(-100%);
   }
-  50% {
-    box-shadow: 0 0 22px 5px rgba(245, 213, 110, 0.6), 0 4px 14px rgba(0, 0, 0, 0.08);
-    border-color: #F5C542 !important;
-  }
-}
-
-@keyframes subtleEdgeFlow {
-  from {
-    stroke-dashoffset: 20;
-  }
-  to {
-    stroke-dashoffset: 0;
+  100% {
+    transform: translateX(400%);
   }
 }
 
-.executing-node-glow {
-  animation: subtleNodeGlow 1.8s infinite ease-in-out !important;
-  z-index: 50 !important;
+/* Node Success Elastic Pop Animation */
+@keyframes nodeSuccessPop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.045);
+    border-color: #22c55e !important;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.35), 0 8px 24px rgba(34, 197, 94, 0.25);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-.react-flow__edge.animated .react-flow__edge-path {
-  stroke-dasharray: 6 4 !important;
-  stroke: var(--color-muted-foreground) !important;
-  stroke-width: 2 !important;
-  opacity: 0.8 !important;
-  animation: subtleEdgeFlow 0.8s linear infinite !important;
+.node-running-active {
+  /* No scale, no shadow, no shine — just a top-edge progress track */
+  overflow: hidden !important;
+  position: relative !important;
 }
 
-.react-flow__edge.active-execution .react-flow__edge-path {
-  stroke-dasharray: 6 4 !important;
-  stroke: #F5D56E !important;
-  stroke-width: 2.2 !important;
-  opacity: 1 !important;
-  animation: subtleEdgeFlow 0.6s linear infinite !important;
-  filter: drop-shadow(0 0 4px rgba(245, 213, 110, 0.5));
+/* The sliding highlight segment — sits in a 2px tall track at the very top */
+.node-running-active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* Track spans full width; the sliding segment is ~30% wide */
+  width: 30%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #F5D56E 40%,
+    #F5C542 60%,
+    transparent 100%
+  );
+  pointer-events: none;
+  border-radius: 0 0 2px 2px;
+  animation: nodeProgressBar 1.4s infinite linear;
+}
+
+.node-success-pop {
+  animation: nodeSuccessPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+}
+
+/* Quiet opacity-pulsing status dot — used in node headers during 'running' state.
+   Replaces Tailwind's animate-ping (which is too aggressive/bouncy for a minimal aesthetic). */
+@keyframes nodeStatusDotPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.node-status-dot {
+  animation: nodeStatusDotPulse 1.4s infinite ease-in-out;
 }

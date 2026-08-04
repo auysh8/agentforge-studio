@@ -10,9 +10,9 @@ export function ConditionNode({ id, data, selected }: NodeProps) {
 
   return (
     <div
-      className={`min-w-[240px] max-w-[290px] bg-card border border-warm-border shadow-sm rounded-xl relative transition-all duration-200 ${
+      className={`min-w-[230px] max-w-[280px] bg-card border border-warm-border shadow-sm rounded-xl relative transition-all duration-200 ${
         selected ? "ring-2 ring-gold/40 border-gold" : ""
-      } ${status === "running" ? "ring-4 ring-gold executing-node-glow" : ""}`}
+      } ${status === "running" ? "node-running-active" : status === "success" ? "node-success-pop" : ""}`}
       style={{ borderLeft: "3px solid var(--family-logic-accent)" }}
     >
       {/* Target Handle */}
@@ -44,7 +44,6 @@ export function ConditionNode({ id, data, selected }: NodeProps) {
 
         {/* Category Tag & Status */}
         <div className="flex items-center gap-1.5 shrink-0">
-          {status === "running" && <div className="w-2 h-2 rounded-full bg-gold animate-ping" />}
           {status === "success" && (
             <div className="w-4 h-4 rounded-full bg-green-500/20 text-green-600 flex items-center justify-center">
               <Check className="h-2.5 w-2.5" />

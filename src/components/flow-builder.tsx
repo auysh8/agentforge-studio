@@ -23,6 +23,9 @@ import { CodeNode } from "./nodes/code-node";
 import { JsonNode } from "./nodes/json-node";
 import { OutputNode } from "./nodes/output-node";
 
+// Custom Edges
+import { FlowingParticleEdge } from "./edges/flowing-particle-edge";
+
 const nodeTypes = {
   trigger: TriggerNode,
   llm: LLMNode,
@@ -34,24 +37,32 @@ const nodeTypes = {
   output: OutputNode,
 };
 
+const edgeTypes = {
+  flowing: FlowingParticleEdge,
+};
+
 const getId = () => `dndnode_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
 function FlowBuilderContent() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const { nodes, edges, nodeStatuses, onNodesChange, onEdgesChange, onConnect, addNode } =
+  const { nodes, edges, nodeStatuses, activeEdgeStatuses, onNodesChange, onEdgesChange, onConnect, addNode } =
     useFlowStore();
   const { screenToFlowPosition } = useReactFlow();
 
   const formattedEdges = edges.map((edge) => {
     const sourceStatus = nodeStatuses[edge.source];
     const targetStatus = nodeStatuses[edge.target];
-    const isExecuting = sourceStatus === "running" || targetStatus === "running";
+    const isTransferring = Boolean(activeEdgeStatuses[edge.id]);
     const isCompleted = sourceStatus === "success" && targetStatus === "success";
 
     return {
       ...edge,
-      animated: isExecuting || isCompleted,
-      className: isExecuting ? "active-execution" : isCompleted ? "animated" : "",
+      type: "flowing",
+      data: {
+        ...edge.data,
+        isTransferring,
+        isCompleted,
+      },
     };
   });
 
@@ -109,6 +120,7 @@ function FlowBuilderContent() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         onDrop={onDrop}
         onDragOver={onDragOver}
         fitView

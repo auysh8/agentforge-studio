@@ -37,6 +37,8 @@ export default function Home() {
   const resetGraph = useFlowStore((state) => state.resetGraph);
   const setNodeStatus = useFlowStore((state) => state.setNodeStatus);
   const resetNodeStatuses = useFlowStore((state) => state.resetNodeStatuses);
+  const setEdgeActive = useFlowStore((state) => state.setEdgeActive);
+  const resetEdgeStatuses = useFlowStore((state) => state.resetEdgeStatuses);
 
   // Auto-open properties panel when a node is selected
   React.useEffect(() => {
@@ -101,6 +103,7 @@ export default function Home() {
   const [completion, setCompletion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | undefined>(undefined);
+  const pendingStatusTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
 
   const getExecutableGraph = useFlowStore((state) => state.getExecutableGraph);
 
@@ -110,7 +113,12 @@ export default function Home() {
       alert("Graph must contain at least a Trigger node.");
       return;
     }
+    // Clear any pending node status timeouts from previous runs
+    Object.values(pendingStatusTimeoutsRef.current).forEach(clearTimeout);
+    pendingStatusTimeoutsRef.current = {};
+
     resetNodeStatuses();
+    resetEdgeStatuses();
     setIsConsoleOpen(true);
     setIsLoading(true);
     setCompletion("");
@@ -133,6 +141,73 @@ export default function Home() {
         }
       }
     }
+
+    // Timing parameters for playful visual relay sequencing
+    const HANDOFF_DOT_DURATION = 450;  // ms for single Messenger Orb dot to travel along edge
+    const MIN_NODE_VISUAL_DURATION = 700; // ms minimum execution visual floor per node
+    // Pause between node A finishing (success pop) and the dot leaving toward node B.
+    // Gives the success pop animation (0.4s) room to breathe before the next hop begins.
+    const POST_SUCCESS_PAUSE = 350;    // ms
+
+    const serverCompletedNodes = new Set<string>();
+    const visualNodeRunTimes: Record<string, number> = {};
+
+    // Helper to queue visual running state of a node (playing handoff dot animation first if connected)
+    const scheduleVisualNodeRun = (nodeId: string) => {
+      const incomingEdge = graph.edges.find((e) => e.target === nodeId);
+      if (incomingEdge && graph.nodes.some((n) => n.id === incomingEdge.source)) {
+        // Step 3: Downstream node enters pending visual hold while dot travels along the line
+        setNodeStatus(nodeId, "pending");
+
+        // 1. Activate incoming edge to send single one-shot Messenger Orb dot
+        setEdgeActive(incomingEdge.id, true);
+
+        // 2. Schedule dot arrival: when dot finishes traveling (450ms), deactivate edge and start node running
+        const handoffTimeout = setTimeout(() => {
+          setEdgeActive(incomingEdge.id, false);
+          visualNodeRunTimes[nodeId] = Date.now();
+          // Step 4: Dot lands -> node transitions to visually 'running'
+          setNodeStatus(nodeId, "running");
+
+          // If server already finished this node while dot was traveling, trigger completion check now
+          if (serverCompletedNodes.has(nodeId)) {
+            scheduleNodeSuccess(nodeId);
+          }
+        }, HANDOFF_DOT_DURATION);
+        pendingStatusTimeoutsRef.current[`handoff_${nodeId}`] = handoffTimeout;
+      } else {
+        // Entry node (Trigger): no incoming edge, starts running immediately
+        visualNodeRunTimes[nodeId] = Date.now();
+        setNodeStatus(nodeId, "running");
+      }
+    };
+
+    // Helper to schedule node completion and handoff to downstream node
+    const scheduleNodeSuccess = (nodeId: string) => {
+      const startTime = visualNodeRunTimes[nodeId] || Date.now();
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, MIN_NODE_VISUAL_DURATION - elapsed);
+
+      const successTimeout = setTimeout(() => {
+        // Step 1: Node finishes work -> set status to success (plays pop/bounce animation)
+        setNodeStatus(nodeId, "success");
+        delete pendingStatusTimeoutsRef.current[`success_${nodeId}`];
+
+        // Step 2 & 5: After a short pause (letting the success pop settle),
+        // trigger the handoff dot toward all downstream nodes.
+        const outgoingEdges = graph.edges.filter((e) => e.source === nodeId);
+        if (outgoingEdges.length > 0) {
+          const relayTimeout = setTimeout(() => {
+            outgoingEdges.forEach((outgoingEdge) => {
+              scheduleVisualNodeRun(outgoingEdge.target);
+            });
+            delete pendingStatusTimeoutsRef.current[`relay_${nodeId}`];
+          }, POST_SUCCESS_PAUSE);
+          pendingStatusTimeoutsRef.current[`relay_${nodeId}`] = relayTimeout;
+        }
+      }, remaining);
+      pendingStatusTimeoutsRef.current[`success_${nodeId}`] = successTimeout;
+    };
 
     try {
       const response = await fetch("/api/execute", {
@@ -166,9 +241,17 @@ export default function Home() {
             try {
               const event = JSON.parse(trimmed.slice(6));
               if (event.type === "node_start") {
-                setNodeStatus(event.nodeId, "running");
+                // If it's the trigger entry node, schedule visual run immediately
+                const isTrigger = graph.nodes.find((n) => n.id === event.nodeId)?.type === "trigger";
+                if (isTrigger) {
+                  scheduleVisualNodeRun(event.nodeId);
+                }
               } else if (event.type === "node_success") {
-                setNodeStatus(event.nodeId, "success");
+                serverCompletedNodes.add(event.nodeId);
+                // If node is already visually running, schedule its completion
+                if (visualNodeRunTimes[event.nodeId]) {
+                  scheduleNodeSuccess(event.nodeId);
+                }
               } else if (event.type === "node_error") {
                 setNodeStatus(event.nodeId, "error");
                 if (event.error) {

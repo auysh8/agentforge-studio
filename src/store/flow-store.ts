@@ -18,7 +18,8 @@ type FlowState = {
   nodes: Node[];
   edges: Edge[];
   selectedNode: Node | null;
-  nodeStatuses: Record<string, 'idle' | 'running' | 'success' | 'error'>;
+  nodeStatuses: Record<string, 'idle' | 'pending' | 'running' | 'success' | 'error'>;
+  activeEdgeStatuses: Record<string, boolean>;
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
@@ -28,8 +29,10 @@ type FlowState = {
   deleteNode: (nodeId: string) => void;
   loadGraph: (graph: { nodes: Node[]; edges: Edge[] }) => void;
   resetGraph: () => void;
-  setNodeStatus: (nodeId: string, status: 'idle' | 'running' | 'success' | 'error') => void;
+  setNodeStatus: (nodeId: string, status: 'idle' | 'pending' | 'running' | 'success' | 'error') => void;
   resetNodeStatuses: () => void;
+  setEdgeActive: (edgeId: string, active: boolean) => void;
+  resetEdgeStatuses: () => void;
   getExecutableGraph: () => { nodes: Node[]; edges: Edge[] } | null;
 };
 
@@ -44,6 +47,7 @@ export const useFlowStore = create<FlowState>()(
       edges: defaultInitialEdges,
       selectedNode: null,
       nodeStatuses: {},
+      activeEdgeStatuses: {},
       onNodesChange: (changes: NodeChange[]) => {
         set({
           nodes: applyNodeChanges(changes, get().nodes),
@@ -94,6 +98,7 @@ export const useFlowStore = create<FlowState>()(
           edges: graph.edges || [],
           selectedNode: null,
           nodeStatuses: {},
+          activeEdgeStatuses: {},
         });
       },
       resetGraph: () => {
@@ -102,15 +107,24 @@ export const useFlowStore = create<FlowState>()(
           edges: [],
           selectedNode: null,
           nodeStatuses: {},
+          activeEdgeStatuses: {},
         });
       },
-      setNodeStatus: (nodeId: string, status: 'idle' | 'running' | 'success' | 'error') => {
+      setNodeStatus: (nodeId: string, status: 'idle' | 'pending' | 'running' | 'success' | 'error') => {
         set((state) => ({
           nodeStatuses: { ...state.nodeStatuses, [nodeId]: status },
         }));
       },
       resetNodeStatuses: () => {
-        set({ nodeStatuses: {} });
+        set({ nodeStatuses: {}, activeEdgeStatuses: {} });
+      },
+      setEdgeActive: (edgeId: string, active: boolean) => {
+        set((state) => ({
+          activeEdgeStatuses: { ...state.activeEdgeStatuses, [edgeId]: active },
+        }));
+      },
+      resetEdgeStatuses: () => {
+        set({ activeEdgeStatuses: {} });
       },
       getExecutableGraph: () => {
         const { nodes, edges } = get();
