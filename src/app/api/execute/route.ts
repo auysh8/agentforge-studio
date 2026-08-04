@@ -81,296 +81,306 @@ function interpolateVariables(
 }
 
 export async function POST(req: Request) {
-  try {
-    logExecution("--- New Flow Execution Request Received ---");
-    const customOpenAIKey = req.headers.get('x-openai-api-key') || '';
-    const customGoogleKey = req.headers.get('x-google-api-key') || req.headers.get('x-gemini-api-key') || '';
-    const customMistralKey = req.headers.get('x-mistral-api-key') || '';
+  const encoder = new TextEncoder();
 
-    const { nodes, edges } = await req.json();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const sendEvent = (data: Record<string, unknown>) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+      };
 
-    // Store outputs of each node by node.id, node.type, and node.data.label
-    const nodeOutputs: Record<string, string> = {};
+      try {
+        logExecution("--- New Flow Execution Request Received ---");
+        const customOpenAIKey = req.headers.get('x-openai-api-key') || '';
+        const customGoogleKey = req.headers.get('x-google-api-key') || req.headers.get('x-gemini-api-key') || '';
+        const customMistralKey = req.headers.get('x-mistral-api-key') || '';
 
-    // Find the trigger node
-    let currentNode = nodes.find((n: Record<string, unknown>) => n.type === 'trigger');
-    if (!currentNode) {
-      logExecution("ERROR: Graph must contain a Trigger node");
-      return new Response(JSON.stringify({ error: 'Graph must contain a Trigger node' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+        const { nodes, edges } = await req.json();
 
-    let outputContext = (currentNode.data?.input as string) || '';
-    nodeOutputs[currentNode.id] = outputContext;
-    if (currentNode.data?.label) {
-      nodeOutputs[currentNode.data.label as string] = outputContext;
-    }
-    nodeOutputs['trigger'] = outputContext;
+        // Store outputs of each node by node.id, node.type, and node.data.label
+        const nodeOutputs: Record<string, string> = {};
 
-    let systemPrompt = 'You are a helpful AI assistant.';
+        // Find the trigger node
+        let currentNode = nodes.find((n: Record<string, unknown>) => n.type === 'trigger');
+        if (!currentNode) {
+          logExecution("ERROR: Graph must contain a Trigger node");
+          sendEvent({ type: 'error', error: 'Graph must contain a Trigger node' });
+          controller.close();
+          return;
+        }
 
-    // Iteratively traverse the DAG
-    while (currentNode) {
-      // 1. Execute current node logic
-      if (currentNode.type === 'trigger') {
-        outputContext = (currentNode.data?.input as string) || '';
+        let outputContext = (currentNode.data?.input as string) || '';
         nodeOutputs[currentNode.id] = outputContext;
+        if (currentNode.data?.label) {
+          nodeOutputs[currentNode.data.label as string] = outputContext;
+        }
         nodeOutputs['trigger'] = outputContext;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-        logExecution(`[Trigger Node] Input: ${outputContext}`);
-      } else if (currentNode.type === 'prompt') {
-        const rawPrompt = (currentNode.data?.prompt as string) || systemPrompt;
-        systemPrompt = interpolateVariables(rawPrompt, nodeOutputs, outputContext);
-        nodeOutputs[currentNode.id] = systemPrompt;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = systemPrompt;
-        logExecution(`[Prompt Node] System Prompt: ${systemPrompt}`);
-      } else if (currentNode.type === 'api') {
-        const method = (currentNode.data?.method as string) || 'GET';
-        let url = (currentNode.data?.url as string) || (currentNode.data?.endpoint as string) || '';
-        url = interpolateVariables(url, nodeOutputs, outputContext);
 
-        logExecution(`[API Node Executing] Method: ${method} | URL: ${url}`);
-        console.log(`\n--- [AgentForge API Node Executing] ---`);
-        console.log(`Node ID: ${currentNode.id}`);
-        console.log(`Method: ${method}`);
-        console.log(`URL: ${url}`);
+        let systemPrompt = 'You are a helpful AI assistant.';
 
-        if (url) {
-          try {
-            const fetchOptions: RequestInit = { method };
-            let headersObj: Record<string, string> = {};
-            if (currentNode.data?.headers) {
+        // Iteratively traverse the DAG
+        while (currentNode) {
+          // Emit node_start event immediately as node starts executing
+          sendEvent({ type: 'node_start', nodeId: currentNode.id, nodeType: currentNode.type });
+
+          // 1. Execute current node logic
+          if (currentNode.type === 'trigger') {
+            outputContext = (currentNode.data?.input as string) || '';
+            nodeOutputs[currentNode.id] = outputContext;
+            nodeOutputs['trigger'] = outputContext;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
+            logExecution(`[Trigger Node] Input: ${outputContext}`);
+          } else if (currentNode.type === 'prompt') {
+            const rawPrompt = (currentNode.data?.prompt as string) || systemPrompt;
+            systemPrompt = interpolateVariables(rawPrompt, nodeOutputs, outputContext);
+            nodeOutputs[currentNode.id] = systemPrompt;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = systemPrompt;
+            logExecution(`[Prompt Node] System Prompt: ${systemPrompt}`);
+          } else if (currentNode.type === 'api') {
+            const method = (currentNode.data?.method as string) || 'GET';
+            let url = (currentNode.data?.url as string) || (currentNode.data?.endpoint as string) || '';
+            url = interpolateVariables(url, nodeOutputs, outputContext);
+
+            logExecution(`[API Node Executing] Method: ${method} | URL: ${url}`);
+            console.log(`\n--- [AgentForge API Node Executing] ---`);
+            console.log(`Node ID: ${currentNode.id}`);
+            console.log(`Method: ${method}`);
+            console.log(`URL: ${url}`);
+
+            if (url) {
               try {
-                const interpolatedHeadersStr = interpolateVariables(
-                  currentNode.data.headers as string,
-                  nodeOutputs,
-                  outputContext
-                );
-                headersObj = JSON.parse(interpolatedHeadersStr);
-                fetchOptions.headers = headersObj;
-                logExecution(`[API Request Headers]: ${interpolatedHeadersStr}`);
-                console.log(`Headers:`, fetchOptions.headers);
-              } catch {
-                logExecution(`[API Error]: Invalid JSON in API Headers`);
-                throw new Error("Invalid JSON in API Headers");
-              }
-            }
-
-            if (method !== 'GET' && method !== 'HEAD') {
-              let bodyStr = typeof currentNode.data?.body === 'string'
-                ? interpolateVariables(currentNode.data.body, nodeOutputs, outputContext)
-                : outputContext;
-
-              // GitHub Contents API helper: auto-base64 encode & auto-fetch SHA for PUT updates
-              if (method === 'PUT' && url.includes('api.github.com/repos/') && url.includes('/contents/')) {
-                try {
-                  const bodyObj = JSON.parse(bodyStr);
-                  if (bodyObj.content) {
-                    let rawContent = typeof bodyObj.content === 'string' ? bodyObj.content.trim() : '';
-                    if (rawContent.startsWith('```')) {
-                      rawContent = rawContent.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-                    }
-                    bodyObj.content = Buffer.from(rawContent).toString('base64');
+                const fetchOptions: RequestInit = { method };
+                let headersObj: Record<string, string> = {};
+                if (currentNode.data?.headers) {
+                  try {
+                    const interpolatedHeadersStr = interpolateVariables(
+                      currentNode.data.headers as string,
+                      nodeOutputs,
+                      outputContext
+                    );
+                    headersObj = JSON.parse(interpolatedHeadersStr);
+                    fetchOptions.headers = headersObj;
+                    logExecution(`[API Request Headers]: ${interpolatedHeadersStr}`);
+                    console.log(`Headers:`, fetchOptions.headers);
+                  } catch {
+                    logExecution(`[API Error]: Invalid JSON in API Headers`);
+                    throw new Error("Invalid JSON in API Headers");
                   }
-                  // Auto fetch SHA if not present
-                  if (!bodyObj.sha) {
+                }
+
+                if (method !== 'GET' && method !== 'HEAD') {
+                  let bodyStr = typeof currentNode.data?.body === 'string'
+                    ? interpolateVariables(currentNode.data.body, nodeOutputs, outputContext)
+                    : outputContext;
+
+                  // GitHub Contents API helper: auto-base64 encode & auto-fetch SHA for PUT updates
+                  if (method === 'PUT' && url.includes('api.github.com/repos/') && url.includes('/contents/')) {
                     try {
-                      const getShaRes = await fetch(url, { headers: headersObj });
-                      if (getShaRes.ok) {
-                        const existingFile = await getShaRes.json();
-                        if (existingFile?.sha) {
-                          bodyObj.sha = existingFile.sha;
-                          logExecution(`[GitHub API Helper] Auto-attached existing SHA: ${existingFile.sha}`);
+                      const bodyObj = JSON.parse(bodyStr);
+                      if (bodyObj.content) {
+                        let rawContent = typeof bodyObj.content === 'string' ? bodyObj.content.trim() : '';
+                        if (rawContent.startsWith('```')) {
+                          rawContent = rawContent.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+                        }
+                        bodyObj.content = Buffer.from(rawContent).toString('base64');
+                      }
+                      // Auto fetch SHA if not present
+                      if (!bodyObj.sha) {
+                        try {
+                          const getShaRes = await fetch(url, { headers: headersObj });
+                          if (getShaRes.ok) {
+                            const existingFile = await getShaRes.json();
+                            if (existingFile?.sha) {
+                              bodyObj.sha = existingFile.sha;
+                              logExecution(`[GitHub API Helper] Auto-attached existing SHA: ${existingFile.sha}`);
+                            }
+                          }
+                        } catch (e) {
+                          logExecution(`[GitHub API Helper] Could not auto-fetch SHA: ${(e as Error).message}`);
                         }
                       }
-                    } catch (e) {
-                      logExecution(`[GitHub API Helper] Could not auto-fetch SHA: ${(e as Error).message}`);
+                      bodyStr = JSON.stringify(bodyObj, null, 2);
+                    } catch {
+                      // Not JSON body, keep as is
                     }
                   }
-                  bodyStr = JSON.stringify(bodyObj, null, 2);
-                } catch {
-                  // Not JSON body, keep as is
-                }
-              }
 
-              fetchOptions.body = bodyStr;
-              logExecution(`[API Request Body]: ${bodyStr.slice(0, 300)}...`);
-              console.log(`Body: ${bodyStr.slice(0, 300)}...`);
+                  fetchOptions.body = bodyStr;
+                  logExecution(`[API Request Body]: ${bodyStr.slice(0, 300)}...`);
+                  console.log(`Body: ${bodyStr.slice(0, 300)}...`);
+                }
+
+                const response = await fetch(url, fetchOptions);
+                outputContext = await response.text();
+                logExecution(`[API Response Status]: ${response.status} ${response.statusText}`);
+                logExecution(`[API Response Preview]: ${outputContext.slice(0, 300)}`);
+                console.log(`Response Status: ${response.status} ${response.statusText}`);
+                console.log(`Response Preview: ${outputContext.slice(0, 300)}...`);
+                console.log(`------------------------------------\n`);
+              } catch (e) {
+                outputContext = `API Request failed: ${(e as Error).message}`;
+                logExecution(`[API Request Failed]: ${(e as Error).message}`);
+                console.error(`[AgentForge API Node Error]: ${(e as Error).message}`);
+                sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+              }
+            }
+            nodeOutputs[currentNode.id] = outputContext;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
+          } else if (currentNode.type === 'code') {
+            const script = (currentNode.data?.code as string) || 'return output;';
+            logExecution(`[Code Node Executing] Script: ${script}`);
+            try {
+              const fn = new Function('output', 'outputs', script);
+              const resultVal = fn(outputContext, nodeOutputs);
+              outputContext = typeof resultVal === 'object' ? JSON.stringify(resultVal, null, 2) : String(resultVal ?? '');
+              logExecution(`[Code Node Output]: ${outputContext.slice(0, 200)}`);
+            } catch (e) {
+              outputContext = `Code execution error: ${(e as Error).message}`;
+              logExecution(`[Code Node Error]: ${(e as Error).message}`);
+              sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+            }
+            nodeOutputs[currentNode.id] = outputContext;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
+          } else if (currentNode.type === 'json') {
+            const jsonPath = (currentNode.data?.path as string) || '';
+            logExecution(`[JSON Node Executing] Path: ${jsonPath}`);
+            try {
+              const parsed = JSON.parse(outputContext);
+              if (jsonPath) {
+                const fn = new Function('data', `try { return data.${jsonPath}; } catch { return undefined; }`);
+                const extracted = fn(parsed);
+                outputContext = typeof extracted === 'object' ? JSON.stringify(extracted, null, 2) : String(extracted ?? '');
+              }
+              logExecution(`[JSON Node Output]: ${outputContext.slice(0, 200)}`);
+            } catch (e) {
+              outputContext = `JSON Extraction error: ${(e as Error).message}`;
+              logExecution(`[JSON Node Error]: ${(e as Error).message}`);
+              sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+            }
+            nodeOutputs[currentNode.id] = outputContext;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
+          } else if (currentNode.type === 'output') {
+            logExecution(`[Output Node Executing] Format: ${currentNode.data?.format || 'text/plain'}`);
+            const rawTpl = (currentNode.data?.template as string) || (currentNode.data?.body as string) || '';
+            if (rawTpl) {
+              outputContext = interpolateVariables(rawTpl, nodeOutputs, outputContext);
+            }
+            nodeOutputs[currentNode.id] = outputContext;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
+          } else if (currentNode.type === 'condition') {
+            // Handled right before edge finding
+          } else if (currentNode.type === 'llm') {
+            const modelName = (currentNode.data?.model as string) || 'gpt-4o';
+            logExecution(`[LLM Node Executing] Model: ${modelName}`);
+
+            let model;
+            const mLower = modelName.toLowerCase();
+            const isGemini =
+              mLower.startsWith('gemini-') ||
+              mLower.includes('google') ||
+              mLower.includes('flash') ||
+              mLower.includes('gemini') ||
+              /^(3\.[0-9]|2\.[0-9]|1\.[0-9])/.test(mLower);
+
+            if (isGemini && !mLower.startsWith('gpt-') && !mLower.includes('mistral')) {
+              const resolvedModel = mLower.startsWith('gemini-') ? modelName : `gemini-${modelName}`;
+              const google = createGoogleGenerativeAI({ apiKey: customGoogleKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '' });
+              model = google(resolvedModel);
+            } else if (mLower.startsWith('gpt-')) {
+              const openai = createOpenAI({ apiKey: customOpenAIKey || process.env.OPENAI_API_KEY || '' });
+              model = openai(modelName);
+            } else if (mLower.includes('mistral') || mLower.includes('mixtral')) {
+              const mistral = createMistral({ apiKey: customMistralKey || process.env.MISTRAL_API_KEY || '' });
+              model = mistral(modelName);
+            } else {
+              const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
+              model = ollama(modelName);
             }
 
-            const response = await fetch(url, fetchOptions);
-            outputContext = await response.text();
-            logExecution(`[API Response Status]: ${response.status} ${response.statusText}`);
-            logExecution(`[API Response Preview]: ${outputContext.slice(0, 300)}`);
-            console.log(`Response Status: ${response.status} ${response.statusText}`);
-            console.log(`Response Preview: ${outputContext.slice(0, 300)}...`);
-            console.log(`------------------------------------\n`);
-          } catch (e) {
-            outputContext = `API Request failed: ${(e as Error).message}`;
-            logExecution(`[API Request Failed]: ${(e as Error).message}`);
-            console.error(`[AgentForge API Node Error]: ${(e as Error).message}`);
-          }
-        }
-        nodeOutputs[currentNode.id] = outputContext;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-      } else if (currentNode.type === 'code') {
-        const script = (currentNode.data?.code as string) || 'return output;';
-        logExecution(`[Code Node Executing] Script: ${script}`);
-        try {
-          const fn = new Function('output', 'outputs', script);
-          const resultVal = fn(outputContext, nodeOutputs);
-          outputContext = typeof resultVal === 'object' ? JSON.stringify(resultVal, null, 2) : String(resultVal ?? '');
-          logExecution(`[Code Node Output]: ${outputContext.slice(0, 200)}`);
-        } catch (e) {
-          outputContext = `Code execution error: ${(e as Error).message}`;
-          logExecution(`[Code Node Error]: ${(e as Error).message}`);
-        }
-        nodeOutputs[currentNode.id] = outputContext;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-      } else if (currentNode.type === 'json') {
-        const jsonPath = (currentNode.data?.path as string) || '';
-        logExecution(`[JSON Node Executing] Path: ${jsonPath}`);
-        try {
-          const parsed = JSON.parse(outputContext);
-          if (jsonPath) {
-            const fn = new Function('data', `try { return data.${jsonPath}; } catch { return undefined; }`);
-            const extracted = fn(parsed);
-            outputContext = typeof extracted === 'object' ? JSON.stringify(extracted, null, 2) : String(extracted ?? '');
-          }
-          logExecution(`[JSON Node Output]: ${outputContext.slice(0, 200)}`);
-        } catch (e) {
-          outputContext = `JSON Extraction error: ${(e as Error).message}`;
-          logExecution(`[JSON Node Error]: ${(e as Error).message}`);
-        }
-        nodeOutputs[currentNode.id] = outputContext;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-      } else if (currentNode.type === 'output') {
-        logExecution(`[Output Node Executing] Format: ${currentNode.data?.format || 'text/plain'}`);
-        const rawTpl = (currentNode.data?.template as string) || (currentNode.data?.body as string) || '';
-        if (rawTpl) {
-          outputContext = interpolateVariables(rawTpl, nodeOutputs, outputContext);
-        }
-        nodeOutputs[currentNode.id] = outputContext;
-        if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-      } else if (currentNode.type === 'condition') {
-        // Handled right before edge finding
-      } else if (currentNode.type === 'llm') {
-        const modelName = (currentNode.data?.model as string) || 'gpt-4o';
-        logExecution(`[LLM Node Executing] Model: ${modelName}`);
+            const interpolatedInput = interpolateVariables(outputContext, nodeOutputs, outputContext);
+            logExecution(`[LLM Prompt]: ${interpolatedInput}`);
 
-        let model;
-        const mLower = modelName.toLowerCase();
-        const isGemini =
-          mLower.startsWith('gemini-') ||
-          mLower.includes('google') ||
-          mLower.includes('flash') ||
-          mLower.includes('gemini') ||
-          /^(3\.[0-9]|2\.[0-9]|1\.[0-9])/.test(mLower);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let { text } = await (generateText as any)({
+              model: model as any,
+              system: systemPrompt,
+              prompt: interpolatedInput,
+              maxTokens: 4096,
+            });
 
-        if (isGemini && !mLower.startsWith('gpt-') && !mLower.includes('mistral')) {
-          const resolvedModel = mLower.startsWith('gemini-') ? modelName : `gemini-${modelName}`;
-          const google = createGoogleGenerativeAI({ apiKey: customGoogleKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '' });
-          model = google(resolvedModel);
-        } else if (mLower.startsWith('gpt-')) {
-          const openai = createOpenAI({ apiKey: customOpenAIKey || process.env.OPENAI_API_KEY || '' });
-          model = openai(modelName);
-        } else if (mLower.includes('mistral') || mLower.includes('mixtral')) {
-          const mistral = createMistral({ apiKey: customMistralKey || process.env.MISTRAL_API_KEY || '' });
-          model = mistral(modelName);
-        } else {
-          const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
-          model = ollama(modelName);
-        }
+            // Clean outer markdown code block wrapper fences if present
+            text = text.trim();
+            if (text.startsWith('```')) {
+              text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            }
 
-        const interpolatedInput = interpolateVariables(outputContext, nodeOutputs, outputContext);
-        logExecution(`[LLM Prompt]: ${interpolatedInput}`);
-
-        const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
-
-        if (outgoingEdges.length > 0) {
-          // If there are downstream nodes, generate full text so execution loop can continue
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let { text } = await (generateText as any)({
-            model: model as any,
-            system: systemPrompt,
-            prompt: interpolatedInput,
-            maxTokens: 4096,
-          });
-
-          // Clean outer markdown code block wrapper fences if present
-          text = text.trim();
-          if (text.startsWith('```')) {
-            text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+            outputContext = text;
+            nodeOutputs[currentNode.id] = text;
+            nodeOutputs['llm'] = text;
+            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = text;
+            logExecution(`[LLM Node Output]: ${text.slice(0, 200)}...`);
           }
 
-          outputContext = text;
-          nodeOutputs[currentNode.id] = text;
-          nodeOutputs['llm'] = text;
-          if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = text;
-          logExecution(`[LLM Node Output]: ${text.slice(0, 200)}...`);
-        } else {
-          // If LLM is terminal node, stream response to browser
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const result = (streamText as any)({
-            model: model as any,
-            system: systemPrompt,
-            prompt: interpolatedInput,
-            maxTokens: 4096,
-          });
-          return result.toTextStreamResponse();
+          // Emit node_success immediately as node finishes execution
+          sendEvent({ type: 'node_success', nodeId: currentNode.id, output: outputContext });
+
+          // 2. Find the next node
+          const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
+
+          if (outgoingEdges.length === 0) {
+            logExecution(`[End of Flow] No outgoing edges from node ${currentNode.id}`);
+            break; // End of flow
+          }
+
+          let nextEdge;
+          if (currentNode.type === 'condition') {
+            let conditionResult = false;
+            try {
+              const condStr = (currentNode.data?.condition as string) || 'false';
+              const interpolatedCond = interpolateVariables(condStr, nodeOutputs, outputContext);
+              // Safe evaluation check
+              const func = new Function('output', 'outputs', `return ${interpolatedCond};`);
+              conditionResult = !!func(outputContext, nodeOutputs);
+            } catch (e) {
+              console.error("Condition evaluation error", e);
+              conditionResult = false;
+            }
+
+            const handleId = conditionResult ? 'true' : 'false';
+            nextEdge = outgoingEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outgoingEdges[0];
+          } else {
+            nextEdge = outgoingEdges[0];
+          }
+
+          if (nextEdge) {
+            logExecution(`[Transition] Moving from node (${currentNode.id}) -> node (${nextEdge.target})`);
+            currentNode = nodes.find((n: Record<string, unknown>) => n.id === nextEdge.target);
+          } else {
+            logExecution(`[End of Flow] Target node not found`);
+            currentNode = null;
+          }
         }
+
+        // Emit final completion event with full text output
+        sendEvent({ type: 'done', output: outputContext });
+        controller.close();
+      } catch (error) {
+        console.error('Execution error:', error);
+        logExecution(`[Execution Error]: ${(error as Error).message}`);
+        sendEvent({ type: 'error', error: (error as Error).message || 'Execution failed' });
+        controller.close();
       }
+    },
+  });
 
-      // 2. Find the next node
-      const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
-      
-      if (outgoingEdges.length === 0) {
-        logExecution(`[End of Flow] No outgoing edges from node ${currentNode.id}`);
-        break; // End of flow
-      }
-
-      let nextEdge;
-      if (currentNode.type === 'condition') {
-        let conditionResult = false;
-        try {
-          const condStr = (currentNode.data?.condition as string) || 'false';
-          const interpolatedCond = interpolateVariables(condStr, nodeOutputs, outputContext);
-          // Safe evaluation check
-          const func = new Function('output', 'outputs', `return ${interpolatedCond};`);
-          conditionResult = !!func(outputContext, nodeOutputs);
-        } catch (e) {
-          console.error("Condition evaluation error", e);
-          conditionResult = false;
-        }
-        
-        const handleId = conditionResult ? 'true' : 'false';
-        nextEdge = outgoingEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outgoingEdges[0];
-      } else {
-        nextEdge = outgoingEdges[0];
-      }
-
-      if (nextEdge) {
-        logExecution(`[Transition] Moving from node (${currentNode.id}) -> node (${nextEdge.target})`);
-        currentNode = nodes.find((n: Record<string, unknown>) => n.id === nextEdge.target);
-      } else {
-        logExecution(`[End of Flow] Target node not found`);
-        currentNode = null;
-      }
-    }
-
-    return new Response(outputContext, {
-      status: 200,
-      headers: { 'Content-Type': 'text/plain' },
-    });
-
-  } catch (error) {
-    console.error('Execution error:', error);
-    return new Response(JSON.stringify({ error: (error as Error).message || 'Execution failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 }
+
 

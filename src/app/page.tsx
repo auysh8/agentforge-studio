@@ -6,7 +6,6 @@ import { PropertiesPanel } from "@/components/properties-panel";
 import { Sidebar } from "@/components/sidebar";
 import { ConsolePanel } from "@/components/console-panel";
 import { useFlowStore } from "@/store/flow-store";
-import { useCompletion } from "@ai-sdk/react";
 import { ExportModal } from "@/components/export-modal";
 import { SettingsModal } from "@/components/settings-modal";
 import { RunModal } from "@/components/run-modal";
@@ -99,11 +98,11 @@ export default function Home() {
     event.dataTransfer.effectAllowed = "move";
   };
 
+  const [completion, setCompletion] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>(undefined);
+
   const getExecutableGraph = useFlowStore((state) => state.getExecutableGraph);
-  const { completion, complete, isLoading, error } = useCompletion({
-    api: "/api/execute",
-    streamProtocol: "text",
-  });
 
   const handleRunSkill = async () => {
     const graph = getExecutableGraph();
@@ -113,23 +112,14 @@ export default function Home() {
     }
     resetNodeStatuses();
     setIsConsoleOpen(true);
+    setIsLoading(true);
+    setCompletion("");
+    setError(undefined);
 
-    // Stagger node execution statuses to create a visual data flow progression across nodes
-    const nodesInFlow = graph.nodes;
-    let currentIdx = 0;
-    setNodeStatus(nodesInFlow[0].id, "running");
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
 
-    const statusInterval = setInterval(() => {
-      if (currentIdx < nodesInFlow.length - 1) {
-        setNodeStatus(nodesInFlow[currentIdx].id, "success");
-        currentIdx++;
-        setNodeStatus(nodesInFlow[currentIdx].id, "running");
-      } else {
-        clearInterval(statusInterval);
-      }
-    }, 800);
-
-    const headers: Record<string, string> = {};
     if (typeof window !== "undefined") {
       const savedSettings = localStorage.getItem("agentforge-settings");
       if (savedSettings) {
@@ -145,12 +135,63 @@ export default function Home() {
     }
 
     try {
-      await complete("", { body: graph, headers });
-      clearInterval(statusInterval);
-      graph.nodes.forEach((n) => setNodeStatus(n.id, "success"));
-    } catch {
-      clearInterval(statusInterval);
+      const response = await fetch("/api/execute", {
+        method: "POST",
+        headers,
+        body: JSON.stringify(graph),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Execution failed (${response.status}): ${errText}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Failed to read execution stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() || "";
+
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed.startsWith("data: ")) {
+            try {
+              const event = JSON.parse(trimmed.slice(6));
+              if (event.type === "node_start") {
+                setNodeStatus(event.nodeId, "running");
+              } else if (event.type === "node_success") {
+                setNodeStatus(event.nodeId, "success");
+              } else if (event.type === "node_error") {
+                setNodeStatus(event.nodeId, "error");
+                if (event.error) {
+                  setError(new Error(event.error));
+                }
+              } else if (event.type === "done") {
+                setCompletion(event.output || "");
+              } else if (event.type === "error") {
+                setError(new Error(event.error || "Execution failed"));
+                graph.nodes.forEach((n) => setNodeStatus(n.id, "error"));
+              }
+            } catch (e) {
+              console.error("Error parsing stream event:", e);
+            }
+          }
+        }
+      }
+    } catch (err: unknown) {
+      console.error("Execution error:", err);
+      setError(err instanceof Error ? err : new Error(String(err)));
       graph.nodes.forEach((n) => setNodeStatus(n.id, "error"));
+    } finally {
+      setIsLoading(false);
     }
   };
 
