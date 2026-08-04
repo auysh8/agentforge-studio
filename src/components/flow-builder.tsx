@@ -125,21 +125,21 @@ function FlowBuilderContent() {
           nodeColor={(node) => {
             switch (node.type) {
               case "trigger":
-                return "#3B6D11";
+                return "var(--family-trigger-accent)";
               case "llm":
               case "prompt":
-                return "#3C3489";
+                return "var(--family-ai-accent)";
               case "condition":
-                return "#854F0B";
+                return "var(--family-logic-accent)";
               case "api":
-                return "#185FA5";
+                return "var(--family-integration-accent)";
               case "json":
               case "code":
-                return "#085041";
+                return "var(--family-data-accent)";
               case "output":
-                return "#712B13";
+                return "var(--family-output-accent)";
               default:
-                return "#1C1C1E";
+                return "var(--color-foreground)";
             }
           }}
         />

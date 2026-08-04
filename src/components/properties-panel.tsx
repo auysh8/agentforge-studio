@@ -4,17 +4,27 @@ import { useFlowStore } from "@/store/flow-store";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Play, Brain, MessageSquare, Globe, Split, Code2, FileJson, Send } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import {
+  Play,
+  Brain,
+  ChatCircle,
+  PaperPlaneTilt,
+  GitBranch,
+  Code,
+  BracketsCurly,
+  Globe,
+} from "@phosphor-icons/react";
 
 const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
-  trigger: { icon: Play, color: "#22C55E", bg: "rgba(34, 197, 94, 0.12)", label: "Trigger" },
-  llm: { icon: Brain, color: "#A855F7", bg: "rgba(168, 85, 247, 0.12)", label: "LLM Node" },
-  prompt: { icon: MessageSquare, color: "#3B82F6", bg: "rgba(59, 130, 246, 0.12)", label: "Prompt" },
-  api: { icon: Globe, color: "#EC4899", bg: "rgba(236, 72, 153, 0.12)", label: "API Request" },
-  condition: { icon: Split, color: "#F59E0B", bg: "rgba(245, 158, 11, 0.12)", label: "Condition" },
-  code: { icon: Code2, color: "#06B6D4", bg: "rgba(6, 182, 212, 0.12)", label: "Code Script" },
-  json: { icon: FileJson, color: "#F97316", bg: "rgba(249, 115, 22, 0.12)", label: "JSON Extractor" },
-  output: { icon: Send, color: "#10B981", bg: "rgba(16, 185, 129, 0.12)", label: "Output Node" },
+  trigger: { icon: Play, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)", label: "Trigger" },
+  llm: { icon: Brain, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)", label: "LLM Node" },
+  prompt: { icon: ChatCircle, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)", label: "Prompt" },
+  output: { icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)", label: "Output Node" },
+  condition: { icon: GitBranch, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)", label: "Condition" },
+  code: { icon: Code, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "Code Script" },
+  json: { icon: BracketsCurly, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "JSON Extractor" },
+  api: { icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)", label: "API Request" },
 };
 
 export function PropertiesPanel() {
@@ -27,7 +37,7 @@ export function PropertiesPanel() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-muted/60 flex items-center justify-center">
-          <Brain className="h-5 w-5 text-muted-foreground/40" />
+          <Brain size={24} weight="fill" className="text-muted-foreground/40" />
         </div>
         <p className="text-sm text-muted-foreground/60">
           Select a node to edit its properties
@@ -61,7 +71,7 @@ export function PropertiesPanel() {
           className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           style={{ backgroundColor: config.bg }}
         >
-          <IconComp className="h-4 w-4" style={{ color: config.color }} />
+          <IconComp size={18} weight="fill" style={{ color: config.color }} />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: config.color }}>

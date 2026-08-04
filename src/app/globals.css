@@ -120,6 +120,43 @@
   --rose-accent-foreground: #1C1C1E;
   --cream: #FAF7F0;
   --warm-border: #E8E0D0;
+
+  /* Node Family Color Tokens (Light Mode) */
+  --family-trigger-accent: #3B6D11;
+  --family-trigger-icon-bg: #EAF3DE;
+  --family-trigger-icon-color: #27500A;
+  --family-trigger-tag-bg: #EAF3DE;
+  --family-trigger-tag-text: #27500A;
+
+  --family-ai-accent: #3C3489;
+  --family-ai-icon-bg: #EEEDFE;
+  --family-ai-icon-color: #3C3489;
+  --family-ai-tag-bg: #EEEDFE;
+  --family-ai-tag-text: #3C3489;
+
+  --family-logic-accent: #854F0B;
+  --family-logic-icon-bg: #FAEEDA;
+  --family-logic-icon-color: #854F0B;
+  --family-logic-tag-bg: #FAEEDA;
+  --family-logic-tag-text: #854F0B;
+
+  --family-integration-accent: #185FA5;
+  --family-integration-icon-bg: #E6F1FB;
+  --family-integration-icon-color: #0C447C;
+  --family-integration-tag-bg: #E6F1FB;
+  --family-integration-tag-text: #0C447C;
+
+  --family-data-accent: #085041;
+  --family-data-icon-bg: #E1F5EE;
+  --family-data-icon-color: #085041;
+  --family-data-tag-bg: #E1F5EE;
+  --family-data-tag-text: #085041;
+
+  --family-output-accent: #712B13;
+  --family-output-icon-bg: #FAECE7;
+  --family-output-icon-color: #712B13;
+  --family-output-tag-bg: #FAECE7;
+  --family-output-tag-text: #712B13;
 }
 
 /* ============================================
@@ -174,6 +211,43 @@
   --rose-accent-foreground: #1C1C1E;
   --cream: #252321;
   --warm-border: rgba(255, 255, 255, 0.08);
+
+  /* Node Family Color Tokens (Dark Mode) */
+  --family-trigger-accent: #6BAF35;
+  --family-trigger-icon-bg: #1E3610;
+  --family-trigger-icon-color: #8FD65C;
+  --family-trigger-tag-bg: #1E3610;
+  --family-trigger-tag-text: #8FD65C;
+
+  --family-ai-accent: #8B7FE8;
+  --family-ai-icon-bg: #2A2564;
+  --family-ai-icon-color: #B3A8FF;
+  --family-ai-tag-bg: #2A2564;
+  --family-ai-tag-text: #B3A8FF;
+
+  --family-logic-accent: #D89B2E;
+  --family-logic-icon-bg: #3D2A0B;
+  --family-logic-icon-color: #F0B429;
+  --family-logic-tag-bg: #3D2A0B;
+  --family-logic-tag-text: #F0B429;
+
+  --family-integration-accent: #4A93D8;
+  --family-integration-icon-bg: #12294A;
+  --family-integration-icon-color: #6CB4F0;
+  --family-integration-tag-bg: #12294A;
+  --family-integration-tag-text: #6CB4F0;
+
+  --family-data-accent: #3BC895;
+  --family-data-icon-bg: #0E3529;
+  --family-data-icon-color: #5EEAB8;
+  --family-data-tag-bg: #0E3529;
+  --family-data-tag-text: #5EEAB8;
+
+  --family-output-accent: #D97E5F;
+  --family-output-icon-bg: #3A1B10;
+  --family-output-icon-color: #F2977A;
+  --family-output-tag-bg: #3A1B10;
+  --family-output-tag-text: #F2977A;
 }
 
 @layer base {

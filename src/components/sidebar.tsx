@@ -30,26 +30,26 @@ const nodeCategories = [
     id: "core",
     name: "Core Nodes",
     items: [
-      { type: "trigger", label: "Trigger", icon: Play, color: "#27500A", bg: "#EAF3DE" },
-      { type: "llm", label: "LLM Node", icon: Brain, color: "#3C3489", bg: "#EEEDFE" },
-      { type: "prompt", label: "Prompt", icon: ChatCircle, color: "#3C3489", bg: "#EEEDFE" },
-      { type: "output", label: "Output Node", icon: PaperPlaneTilt, color: "#712B13", bg: "#FAECE7" },
+      { type: "trigger", label: "Trigger", icon: Play, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)" },
+      { type: "llm", label: "LLM Node", icon: Brain, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)" },
+      { type: "prompt", label: "Prompt", icon: ChatCircle, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)" },
+      { type: "output", label: "Output Node", icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)" },
     ],
   },
   {
     id: "logic",
     name: "Logic & Flow",
     items: [
-      { type: "condition", label: "Condition", icon: GitBranch, color: "#854F0B", bg: "#FAEEDA" },
-      { type: "code", label: "Code Script", icon: Code, color: "#085041", bg: "#E1F5EE" },
-      { type: "json", label: "JSON Extractor", icon: BracketsCurly, color: "#085041", bg: "#E1F5EE" },
+      { type: "condition", label: "Condition", icon: GitBranch, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)" },
+      { type: "code", label: "Code Script", icon: Code, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)" },
+      { type: "json", label: "JSON Extractor", icon: BracketsCurly, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)" },
     ],
   },
   {
     id: "integration",
     name: "Integrations",
     items: [
-      { type: "api", label: "API Request", icon: Globe, color: "#185FA5", bg: "#E6F1FB" },
+      { type: "api", label: "API Request", icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)" },
     ],
   },
 ];

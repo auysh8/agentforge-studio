@@ -13,13 +13,14 @@ export function LLMNode({ id, data, selected }: NodeProps) {
       className={`min-w-[230px] max-w-[280px] bg-card border border-warm-border shadow-sm rounded-xl relative transition-all duration-200 ${
         selected ? "ring-2 ring-gold/40 border-gold" : ""
       } ${status === "running" ? "ring-4 ring-gold executing-node-glow" : ""}`}
-      style={{ borderLeft: "3px solid #3C3489" }}
+      style={{ borderLeft: "3px solid var(--family-ai-accent)" }}
     >
       {/* Target Handle */}
       <Handle
         type="target"
         position={Position.Left}
-        className="!w-3 !h-3 !bg-[#3C3489] !border-2 !border-background hover:!scale-125 transition-transform"
+        className="!w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform"
+        style={{ backgroundColor: "var(--family-ai-accent)" }}
       />
 
       {/* Node Header */}
@@ -27,9 +28,9 @@ export function LLMNode({ id, data, selected }: NodeProps) {
         <div className="flex items-start gap-2.5 min-w-0 text-left">
           <div
             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-            style={{ backgroundColor: "#EEEDFE" }}
+            style={{ backgroundColor: "var(--family-ai-icon-bg)" }}
           >
-            <Brain size={18} weight="fill" style={{ color: "#3C3489" }} />
+            <Brain size={18} weight="fill" style={{ color: "var(--family-ai-icon-color)" }} />
           </div>
           <div className="min-w-0 flex-1 text-left">
             <h3 className="text-[14px] font-medium text-foreground truncate text-left">
@@ -56,7 +57,7 @@ export function LLMNode({ id, data, selected }: NodeProps) {
           )}
           <span
             className="px-2 py-0.5 rounded-full text-[11px] font-medium"
-            style={{ backgroundColor: "#EEEDFE", color: "#3C3489" }}
+            style={{ backgroundColor: "var(--family-ai-tag-bg)", color: "var(--family-ai-tag-text)" }}
           >
             ai
           </span>
@@ -74,7 +75,8 @@ export function LLMNode({ id, data, selected }: NodeProps) {
       <Handle
         type="source"
         position={Position.Right}
-        className="!w-3 !h-3 !bg-[#3C3489] !border-2 !border-background hover:!scale-125 transition-transform"
+        className="!w-3 !h-3 !border-2 !border-background hover:!scale-125 transition-transform"
+        style={{ backgroundColor: "var(--family-ai-accent)" }}
       />
     </div>
   );
