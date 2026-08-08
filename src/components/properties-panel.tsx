@@ -17,10 +17,15 @@ import {
   Code,
   BracketsCurly,
   Globe,
+  WebhooksLogo,
+  Clock,
+  Database,
 } from "@phosphor-icons/react";
 
 const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; bg: string; label: string }> = {
   trigger: { icon: Play, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)", label: "Trigger" },
+  webhook: { icon: WebhooksLogo, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)", label: "Webhook Trigger" },
+  cron: { icon: Clock, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)", label: "Cron Schedule" },
   llm: { icon: Brain, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)", label: "LLM Node" },
   prompt: { icon: ChatCircle, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)", label: "Prompt" },
   output: { icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)", label: "Output Node" },
@@ -31,6 +36,7 @@ const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; b
   code: { icon: Code, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "Code Script" },
   json: { icon: BracketsCurly, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "JSON Extractor" },
   api: { icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)", label: "API Request" },
+  vector_db: { icon: Database, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)", label: "Vector Search / RAG" },
 };
 
 export function PropertiesPanel() {
@@ -328,6 +334,107 @@ export function PropertiesPanel() {
           <p className="text-[10px] text-muted-foreground/60 leading-tight">
             e.g. <code className="font-mono">results[0].title</code> or <code className="font-mono">data.user.name</code>
           </p>
+        </div>
+      )}
+
+      {/* Webhook Trigger */}
+      {selectedNode.type === "webhook" && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-webhook-id" className="text-xs font-medium text-muted-foreground">
+              Webhook Path ID
+            </Label>
+            <Input
+              id="node-webhook-id"
+              value={(selectedNode.data.webhookId as string) || selectedNode.id}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { webhookId: e.target.value })
+              }
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60 leading-tight">
+              Endpoint: <code className="font-mono">/api/webhooks/{(selectedNode.data.webhookId as string) || selectedNode.id}</code>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Cron Schedule */}
+      {selectedNode.type === "cron" && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-cron-expr" className="text-xs font-medium text-muted-foreground">
+              Cron Schedule Expression
+            </Label>
+            <Input
+              id="node-cron-expr"
+              value={(selectedNode.data.cronExpression as string) || "0 8 * * *"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { cronExpression: e.target.value })
+              }
+              placeholder="0 8 * * *"
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60 leading-tight">
+              Standard 5-part cron syntax (e.g. <code className="font-mono">0 8 * * *</code> for daily at 8am).
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Vector Search / RAG */}
+      {selectedNode.type === "vector_db" && (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-vector-provider" className="text-xs font-medium text-muted-foreground">
+              Vector Provider
+            </Label>
+            <select
+              id="node-vector-provider"
+              value={(selectedNode.data.provider as string) || "in-memory"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { provider: e.target.value })
+              }
+              className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
+            >
+              <option value="in-memory">In-Memory Semantic Search</option>
+              <option value="pinecone">Pinecone Vector DB</option>
+              <option value="qdrant">Qdrant Vector DB</option>
+              <option value="chroma">ChromaDB Store</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="node-vector-topk" className="text-xs font-medium text-muted-foreground">
+              Top-K Document Snippets
+            </Label>
+            <Input
+              id="node-vector-topk"
+              type="number"
+              min={1}
+              max={10}
+              value={Number(selectedNode.data.topK || 3)}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { topK: parseInt(e.target.value, 10) })
+              }
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="node-vector-query" className="text-xs font-medium text-muted-foreground">
+              Search Query Template (Optional)
+            </Label>
+            <Input
+              id="node-vector-query"
+              value={(selectedNode.data.searchQuery as string) || ""}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { searchQuery: e.target.value })
+              }
+              placeholder="{{trigger}} or search question"
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+            />
+          </div>
         </div>
       )}
 

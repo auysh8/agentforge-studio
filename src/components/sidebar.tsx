@@ -25,6 +25,9 @@ import {
   Code,
   BracketsCurly,
   Globe,
+  WebhooksLogo,
+  Clock,
+  Database,
 } from "@phosphor-icons/react";
 import { useTheme } from "next-themes";
 
@@ -34,6 +37,8 @@ const nodeCategories = [
     name: "Triggers & Inputs",
     items: [
       { type: "trigger", label: "Trigger", icon: Play, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)" },
+      { type: "webhook", label: "Webhook Trigger", icon: WebhooksLogo, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)" },
+      { type: "cron", label: "Cron Schedule", icon: Clock, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)" },
     ],
   },
   {
@@ -64,9 +69,10 @@ const nodeCategories = [
   },
   {
     id: "integration",
-    name: "Integrations",
+    name: "Integrations & RAG",
     items: [
       { type: "api", label: "API Request", icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)" },
+      { type: "vector_db", label: "Vector Search / RAG", icon: Database, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)" },
     ],
   },
   {

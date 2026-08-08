@@ -15,9 +15,12 @@ import { useFlowStore } from "@/store/flow-store";
 
 // Custom Nodes
 import { TriggerNode } from "./nodes/trigger-node";
+import { WebhookNode } from "./nodes/webhook-node";
+import { CronNode } from "./nodes/cron-node";
 import { LLMNode } from "./nodes/llm-node";
 import { PromptNode } from "./nodes/prompt-node";
 import { APINode } from "./nodes/api-node";
+import { VectorNode } from "./nodes/vector-node";
 import { ConditionNode } from "./nodes/condition-node";
 import { ParallelNode } from "./nodes/parallel-node";
 import { JoinNode } from "./nodes/join-node";
@@ -31,9 +34,12 @@ import { FlowingParticleEdge } from "./edges/flowing-particle-edge";
 
 const nodeTypes = {
   trigger: TriggerNode,
+  webhook: WebhookNode,
+  cron: CronNode,
   llm: LLMNode,
   prompt: PromptNode,
   api: APINode,
+  vector_db: VectorNode,
   condition: ConditionNode,
   parallel: ParallelNode,
   join: JoinNode,
@@ -93,6 +99,9 @@ function FlowBuilderContent() {
       });
 
       let defaultData: Record<string, unknown> = { label: `${type} node` };
+      if (type === "webhook") defaultData = { ...defaultData, label: "Webhook Trigger", webhookId: `hook_${Date.now().toString(36)}`, method: "POST" };
+      if (type === "cron") defaultData = { ...defaultData, label: "Cron Schedule", cronExpression: "0 8 * * *" };
+      if (type === "vector_db") defaultData = { ...defaultData, label: "Vector Search / RAG", provider: "in-memory", topK: 3, collectionName: "documents" };
       if (type === "llm") defaultData = { ...defaultData, model: "gpt-4o" };
       if (type === "prompt")
         defaultData = {
@@ -146,6 +155,8 @@ function FlowBuilderContent() {
           nodeColor={(node) => {
             switch (node.type) {
               case "trigger":
+              case "webhook":
+              case "cron":
                 return "var(--family-trigger-accent)";
               case "llm":
               case "prompt":
@@ -156,6 +167,7 @@ function FlowBuilderContent() {
               case "foreach":
                 return "var(--family-logic-accent)";
               case "api":
+              case "vector_db":
                 return "var(--family-integration-accent)";
               case "json":
               case "code":

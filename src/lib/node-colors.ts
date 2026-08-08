@@ -37,6 +37,8 @@ export const NODE_FAMILY_TOKENS: Record<NodeFamily, { light: FamilyColors; dark:
 
 export const NODE_TYPE_TO_FAMILY: Record<string, NodeFamily> = {
   trigger: "trigger",
+  webhook: "trigger",
+  cron: "trigger",
   llm: "ai",
   prompt: "ai",
   condition: "logic",
@@ -44,6 +46,7 @@ export const NODE_TYPE_TO_FAMILY: Record<string, NodeFamily> = {
   join: "logic",
   foreach: "logic",
   api: "integration",
+  vector_db: "integration",
   code: "data",
   json: "data",
   output: "output",

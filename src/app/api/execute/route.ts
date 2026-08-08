@@ -100,8 +100,8 @@ export async function POST(req: Request) {
         // Store outputs of each node by node.id, node.type, and node.data.label
         const nodeOutputs: Record<string, string> = {};
 
-        // Find the trigger node
-        let currentNode = nodes.find((n: Record<string, unknown>) => n.type === 'trigger');
+        // Find the trigger node (trigger, webhook, or cron)
+        let currentNode = nodes.find((n: Record<string, unknown>) => n.type === 'trigger' || n.type === 'webhook' || n.type === 'cron');
         if (!currentNode) {
           logExecution("ERROR: Graph must contain a Trigger node");
           sendEvent({ type: 'error', error: 'Graph must contain a Trigger node' });
@@ -124,12 +124,41 @@ export async function POST(req: Request) {
           sendEvent({ type: 'node_start', nodeId: node.id, nodeType: node.type });
           let resContext = currentContext;
 
-          if (node.type === 'trigger') {
-            resContext = (node.data?.input as string) || '';
+          if (node.type === 'trigger' || node.type === 'webhook') {
+            resContext = (node.data?.input as string) || currentContext || '';
             nodeOutputs[node.id] = resContext;
             nodeOutputs['trigger'] = resContext;
             if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
-            logExecution(`[Trigger Node] Input: ${resContext}`);
+            logExecution(`[${node.type} Node] Input: ${resContext}`);
+          } else if (node.type === 'cron') {
+            resContext = `Cron trigger executed at ${new Date().toISOString()} (Schedule: ${node.data?.cronExpression || '0 8 * * *'})`;
+            nodeOutputs[node.id] = resContext;
+            nodeOutputs['trigger'] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+            logExecution(`[Cron Node] Executed schedule: ${node.data?.cronExpression}`);
+          } else if (node.type === 'vector_db') {
+            const provider = (node.data?.provider as string) || 'in-memory';
+            const topK = Number(node.data?.topK || 3);
+            const rawQuery = (node.data?.searchQuery as string) || resContext;
+            const interpolatedQuery = interpolateVariables(rawQuery, nodeOutputs, resContext);
+            logExecution(`[Vector Node Executing] Provider: ${provider} | Query: ${interpolatedQuery}`);
+
+            const dummyDocs = [
+              `[Document 1] System Architecture: AgentForge Studio uses Next.js App Router with serverless DAG execution engine.`,
+              `[Document 2] Security Rules: Code nodes run server-side. Sanitize inputs and validate API tokens.`,
+              `[Document 3] LLM Models: Native multi-provider support for OpenAI GPT-4o, Google Gemini 2.0 Flash, and Mistral.`,
+              `[Document 4] Vector RAG: Vector search retrieves top-k relevant knowledge snippets for prompt enrichment.`,
+            ];
+
+            const queryLower = interpolatedQuery.toLowerCase();
+            const matchedDocs = dummyDocs
+              .filter(doc => queryLower.split(' ').some(word => word.length > 2 && doc.toLowerCase().includes(word)))
+              .slice(0, topK);
+
+            const finalSnippets = matchedDocs.length > 0 ? matchedDocs : dummyDocs.slice(0, topK);
+            resContext = `[Retrieved Context (${provider}, Top-${topK})]:\n${finalSnippets.join('\n\n')}`;
+            nodeOutputs[node.id] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
           } else if (node.type === 'prompt') {
             const rawPrompt = (node.data?.prompt as string) || systemPrompt;
             systemPrompt = interpolateVariables(rawPrompt, nodeOutputs, resContext);

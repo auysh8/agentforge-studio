@@ -133,9 +133,9 @@ server.tool(
   { input: z.string().describe("${inputHint}") },
   async ({ input }) => {
     try {
-      let currentNode: any = nodes.find((n) => n.type === 'trigger');
+      let currentNode: any = nodes.find((n) => n.type === 'trigger' || n.type === 'webhook' || n.type === 'cron');
       if (!currentNode) {
-        return { content: [{ type: "text", text: "Error: Graph must contain a Trigger node" }], isError: true };
+        return { content: [{ type: "text", text: "Error: Graph must contain a Trigger, Webhook, or Cron node" }], isError: true };
       }
 
       // nodeOutputs tracks every node's output keyed by id AND label
@@ -149,10 +149,17 @@ server.tool(
       if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
 
       while (currentNode) {
-        if (currentNode.type === 'trigger') {
+        if (currentNode.type === 'trigger' || currentNode.type === 'webhook' || currentNode.type === 'cron') {
           outputContext = input || '';
           nodeOutputs[currentNode.id] = outputContext;
           nodeOutputs['trigger'] = outputContext;
+          if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
+
+        } else if (currentNode.type === 'vector_db') {
+          const provider = currentNode.data?.provider || 'in-memory';
+          const topK = Number(currentNode.data?.topK || 3);
+          outputContext = "[Retrieved Vector Context (" + provider + ", Top-" + topK + ")]:\nSystem Architecture & Multi-Agent RAG Context Snippets";
+          nodeOutputs[currentNode.id] = outputContext;
           if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
 
         } else if (currentNode.type === 'prompt') {
