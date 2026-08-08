@@ -11,12 +11,17 @@
     "start": "next start",
     "lint": "eslint",
     "desktop:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
-    "desktop:build": "next build && electron-builder",
-    "desktop:pack": "next build && electron-builder --dir"
+    "desktop:build": "next build && node -e \"const fs=require('fs'); fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive: true}); fs.cpSync('public', '.next/standalone/public', {recursive: true, errorOnExist: false});\" && electron-builder",
+    "desktop:pack": "next build && node -e \"const fs=require('fs'); fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive: true}); fs.cpSync('public', '.next/standalone/public', {recursive: true, errorOnExist: false});\" && electron-builder --dir"
   },
   "build": {
     "appId": "com.agentforge.studio",
     "productName": "AgentForge Studio",
+    "asarUnpack": [
+      ".next/standalone/**/*",
+      ".next/static/**/*",
+      "public/**/*"
+    ],
     "directories": {
       "output": "dist-desktop"
     },

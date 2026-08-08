@@ -44,3 +44,6 @@ execution.log
 # agents
 .agents/
 
+# desktop builds
+/dist/
+/dist-desktop/

@@ -102,24 +102,17 @@ async function startApp() {
     const port = await getAvailablePort();
     url = `http://localhost:${port}`;
 
-    const standaloneDir = path.join(app.getAppPath(), '.next', 'standalone');
+    const rawAppPath = app.getAppPath();
+    const appDir = rawAppPath.endsWith('app.asar')
+      ? path.join(path.dirname(rawAppPath), 'app.asar.unpacked')
+      : rawAppPath;
+
+    const standaloneDir = path.join(appDir, '.next', 'standalone');
     const standaloneServerPath = path.join(standaloneDir, 'server.js');
-
-    // Ensure static assets are present in standalone output directory
-    const staticSrc = path.join(app.getAppPath(), '.next', 'static');
-    const staticDest = path.join(standaloneDir, '.next', 'static');
-    const publicSrc = path.join(app.getAppPath(), 'public');
-    const publicDest = path.join(standaloneDir, 'public');
-
-    try {
-      copyDirRecursiveSync(staticSrc, staticDest);
-      copyDirRecursiveSync(publicSrc, publicDest);
-    } catch (err) {
-      console.error('Error syncing static files:', err);
-    }
 
     if (fs.existsSync(standaloneServerPath)) {
       serverProcess = fork(standaloneServerPath, [], {
+        cwd: standaloneDir,
         env: {
           ...process.env,
           PORT: port.toString(),
