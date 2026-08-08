@@ -59,9 +59,7 @@ jobs:
             dist-desktop/*.dmg
             dist-desktop/*.zip
             dist-desktop/*.exe
-            dist-desktop/*.msi
             dist-desktop/*.AppImage
             dist-desktop/*.deb
-            dist-desktop/*.rpm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
