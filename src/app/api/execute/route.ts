@@ -118,50 +118,44 @@ export async function POST(req: Request) {
 
         let systemPrompt = 'You are a helpful AI assistant.';
 
-        // Iteratively traverse the DAG
-        while (currentNode) {
-          // Emit node_start event immediately as node starts executing
-          sendEvent({ type: 'node_start', nodeId: currentNode.id, nodeType: currentNode.type });
+        // Single node executor function
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executeSingleNode = async (node: any, currentContext: string): Promise<string> => {
+          sendEvent({ type: 'node_start', nodeId: node.id, nodeType: node.type });
+          let resContext = currentContext;
 
-          // 1. Execute current node logic
-          if (currentNode.type === 'trigger') {
-            outputContext = (currentNode.data?.input as string) || '';
-            nodeOutputs[currentNode.id] = outputContext;
-            nodeOutputs['trigger'] = outputContext;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-            logExecution(`[Trigger Node] Input: ${outputContext}`);
-          } else if (currentNode.type === 'prompt') {
-            const rawPrompt = (currentNode.data?.prompt as string) || systemPrompt;
-            systemPrompt = interpolateVariables(rawPrompt, nodeOutputs, outputContext);
-            nodeOutputs[currentNode.id] = systemPrompt;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = systemPrompt;
+          if (node.type === 'trigger') {
+            resContext = (node.data?.input as string) || '';
+            nodeOutputs[node.id] = resContext;
+            nodeOutputs['trigger'] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+            logExecution(`[Trigger Node] Input: ${resContext}`);
+          } else if (node.type === 'prompt') {
+            const rawPrompt = (node.data?.prompt as string) || systemPrompt;
+            systemPrompt = interpolateVariables(rawPrompt, nodeOutputs, resContext);
+            nodeOutputs[node.id] = systemPrompt;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = systemPrompt;
             logExecution(`[Prompt Node] System Prompt: ${systemPrompt}`);
-          } else if (currentNode.type === 'api') {
-            const method = (currentNode.data?.method as string) || 'GET';
-            let url = (currentNode.data?.url as string) || (currentNode.data?.endpoint as string) || '';
-            url = interpolateVariables(url, nodeOutputs, outputContext);
+          } else if (node.type === 'api') {
+            const method = (node.data?.method as string) || 'GET';
+            let url = (node.data?.url as string) || (node.data?.endpoint as string) || '';
+            url = interpolateVariables(url, nodeOutputs, resContext);
 
             logExecution(`[API Node Executing] Method: ${method} | URL: ${url}`);
-            console.log(`\n--- [AgentForge API Node Executing] ---`);
-            console.log(`Node ID: ${currentNode.id}`);
-            console.log(`Method: ${method}`);
-            console.log(`URL: ${url}`);
 
             if (url) {
               try {
                 const fetchOptions: RequestInit = { method };
                 let headersObj: Record<string, string> = {};
-                if (currentNode.data?.headers) {
+                if (node.data?.headers) {
                   try {
                     const interpolatedHeadersStr = interpolateVariables(
-                      currentNode.data.headers as string,
+                      node.data.headers as string,
                       nodeOutputs,
-                      outputContext
+                      resContext
                     );
                     headersObj = JSON.parse(interpolatedHeadersStr);
                     fetchOptions.headers = headersObj;
-                    logExecution(`[API Request Headers]: ${interpolatedHeadersStr}`);
-                    console.log(`Headers:`, fetchOptions.headers);
                   } catch {
                     logExecution(`[API Error]: Invalid JSON in API Headers`);
                     throw new Error("Invalid JSON in API Headers");
@@ -169,11 +163,10 @@ export async function POST(req: Request) {
                 }
 
                 if (method !== 'GET' && method !== 'HEAD') {
-                  let bodyStr = typeof currentNode.data?.body === 'string'
-                    ? interpolateVariables(currentNode.data.body, nodeOutputs, outputContext)
-                    : outputContext;
+                  let bodyStr = typeof node.data?.body === 'string'
+                    ? interpolateVariables(node.data.body, nodeOutputs, resContext)
+                    : resContext;
 
-                  // GitHub Contents API helper: auto-base64 encode & auto-fetch SHA for PUT updates
                   if (method === 'PUT' && url.includes('api.github.com/repos/') && url.includes('/contents/')) {
                     try {
                       const bodyObj = JSON.parse(bodyStr);
@@ -184,7 +177,6 @@ export async function POST(req: Request) {
                         }
                         bodyObj.content = Buffer.from(rawContent).toString('base64');
                       }
-                      // Auto fetch SHA if not present
                       if (!bodyObj.sha) {
                         try {
                           const getShaRes = await fetch(url, { headers: headersObj });
@@ -192,7 +184,6 @@ export async function POST(req: Request) {
                             const existingFile = await getShaRes.json();
                             if (existingFile?.sha) {
                               bodyObj.sha = existingFile.sha;
-                              logExecution(`[GitHub API Helper] Auto-attached existing SHA: ${existingFile.sha}`);
                             }
                           }
                         } catch (e) {
@@ -201,76 +192,65 @@ export async function POST(req: Request) {
                       }
                       bodyStr = JSON.stringify(bodyObj, null, 2);
                     } catch {
-                      // Not JSON body, keep as is
+                      // Not JSON body
                     }
                   }
 
                   fetchOptions.body = bodyStr;
-                  logExecution(`[API Request Body]: ${bodyStr.slice(0, 300)}...`);
-                  console.log(`Body: ${bodyStr.slice(0, 300)}...`);
                 }
 
                 const response = await fetch(url, fetchOptions);
-                outputContext = await response.text();
+                resContext = await response.text();
                 logExecution(`[API Response Status]: ${response.status} ${response.statusText}`);
-                logExecution(`[API Response Preview]: ${outputContext.slice(0, 300)}`);
-                console.log(`Response Status: ${response.status} ${response.statusText}`);
-                console.log(`Response Preview: ${outputContext.slice(0, 300)}...`);
-                console.log(`------------------------------------\n`);
               } catch (e) {
-                outputContext = `API Request failed: ${(e as Error).message}`;
+                resContext = `API Request failed: ${(e as Error).message}`;
                 logExecution(`[API Request Failed]: ${(e as Error).message}`);
-                console.error(`[AgentForge API Node Error]: ${(e as Error).message}`);
-                sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+                sendEvent({ type: 'node_error', nodeId: node.id, error: resContext });
               }
             }
-            nodeOutputs[currentNode.id] = outputContext;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-          } else if (currentNode.type === 'code') {
-            const script = (currentNode.data?.code as string) || 'return output;';
+            nodeOutputs[node.id] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+          } else if (node.type === 'code') {
+            const script = (node.data?.code as string) || 'return output;';
             logExecution(`[Code Node Executing] Script: ${script}`);
             try {
               const fn = new Function('output', 'outputs', script);
-              const resultVal = fn(outputContext, nodeOutputs);
-              outputContext = typeof resultVal === 'object' ? JSON.stringify(resultVal, null, 2) : String(resultVal ?? '');
-              logExecution(`[Code Node Output]: ${outputContext.slice(0, 200)}`);
+              const resultVal = fn(resContext, nodeOutputs);
+              resContext = typeof resultVal === 'object' ? JSON.stringify(resultVal, null, 2) : String(resultVal ?? '');
             } catch (e) {
-              outputContext = `Code execution error: ${(e as Error).message}`;
+              resContext = `Code execution error: ${(e as Error).message}`;
               logExecution(`[Code Node Error]: ${(e as Error).message}`);
-              sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+              sendEvent({ type: 'node_error', nodeId: node.id, error: resContext });
             }
-            nodeOutputs[currentNode.id] = outputContext;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-          } else if (currentNode.type === 'json') {
-            const jsonPath = (currentNode.data?.path as string) || '';
+            nodeOutputs[node.id] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+          } else if (node.type === 'json') {
+            const jsonPath = (node.data?.path as string) || '';
             logExecution(`[JSON Node Executing] Path: ${jsonPath}`);
             try {
-              const parsed = JSON.parse(outputContext);
+              const parsed = JSON.parse(resContext);
               if (jsonPath) {
                 const fn = new Function('data', `try { return data.${jsonPath}; } catch { return undefined; }`);
                 const extracted = fn(parsed);
-                outputContext = typeof extracted === 'object' ? JSON.stringify(extracted, null, 2) : String(extracted ?? '');
+                resContext = typeof extracted === 'object' ? JSON.stringify(extracted, null, 2) : String(extracted ?? '');
               }
-              logExecution(`[JSON Node Output]: ${outputContext.slice(0, 200)}`);
             } catch (e) {
-              outputContext = `JSON Extraction error: ${(e as Error).message}`;
+              resContext = `JSON Extraction error: ${(e as Error).message}`;
               logExecution(`[JSON Node Error]: ${(e as Error).message}`);
-              sendEvent({ type: 'node_error', nodeId: currentNode.id, error: outputContext });
+              sendEvent({ type: 'node_error', nodeId: node.id, error: resContext });
             }
-            nodeOutputs[currentNode.id] = outputContext;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-          } else if (currentNode.type === 'output') {
-            logExecution(`[Output Node Executing] Format: ${currentNode.data?.format || 'text/plain'}`);
-            const rawTpl = (currentNode.data?.template as string) || (currentNode.data?.body as string) || '';
+            nodeOutputs[node.id] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+          } else if (node.type === 'output') {
+            logExecution(`[Output Node Executing] Format: ${node.data?.format || 'text/plain'}`);
+            const rawTpl = (node.data?.template as string) || (node.data?.body as string) || '';
             if (rawTpl) {
-              outputContext = interpolateVariables(rawTpl, nodeOutputs, outputContext);
+              resContext = interpolateVariables(rawTpl, nodeOutputs, resContext);
             }
-            nodeOutputs[currentNode.id] = outputContext;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = outputContext;
-          } else if (currentNode.type === 'condition') {
-            // Handled right before edge finding
-          } else if (currentNode.type === 'llm') {
-            const modelName = (currentNode.data?.model as string) || 'gpt-4o';
+            nodeOutputs[node.id] = resContext;
+            if (node.data?.label) nodeOutputs[node.data.label as string] = resContext;
+          } else if (node.type === 'llm') {
+            const modelName = (node.data?.model as string) || 'gpt-4o';
             logExecution(`[LLM Node Executing] Model: ${modelName}`);
 
             let model;
@@ -297,8 +277,7 @@ export async function POST(req: Request) {
               model = ollama(modelName);
             }
 
-            const interpolatedInput = interpolateVariables(outputContext, nodeOutputs, outputContext);
-            logExecution(`[LLM Prompt]: ${interpolatedInput}`);
+            const interpolatedInput = interpolateVariables(resContext, nodeOutputs, resContext);
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let { text } = await (generateText as any)({
@@ -308,56 +287,243 @@ export async function POST(req: Request) {
               maxTokens: 4096,
             });
 
-            // Clean outer markdown code block wrapper fences if present
             text = text.trim();
             if (text.startsWith('```')) {
               text = text.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
             }
 
-            outputContext = text;
-            nodeOutputs[currentNode.id] = text;
+            resContext = text;
+            nodeOutputs[node.id] = text;
             nodeOutputs['llm'] = text;
-            if (currentNode.data?.label) nodeOutputs[currentNode.data.label as string] = text;
-            logExecution(`[LLM Node Output]: ${text.slice(0, 200)}...`);
+            if (node.data?.label) nodeOutputs[node.data.label as string] = text;
           }
 
-          // Emit node_success immediately as node finishes execution
-          sendEvent({ type: 'node_success', nodeId: currentNode.id, output: outputContext });
+          sendEvent({ type: 'node_success', nodeId: node.id, output: resContext });
+          return resContext;
+        };
 
-          // 2. Find the next node
-          const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
+        // Helper to execute a subgraph until join node or end
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executeSubgraph = async (startNode: any, inContext: string, localOutputs: Record<string, string>): Promise<{ output: string; lastNodeId: string; nodeLabel: string }> => {
+          let curr = startNode;
+          let ctx = inContext;
 
-          if (outgoingEdges.length === 0) {
-            logExecution(`[End of Flow] No outgoing edges from node ${currentNode.id}`);
-            break; // End of flow
-          }
-
-          let nextEdge;
-          if (currentNode.type === 'condition') {
-            let conditionResult = false;
-            try {
-              const condStr = (currentNode.data?.condition as string) || 'false';
-              const interpolatedCond = interpolateVariables(condStr, nodeOutputs, outputContext);
-              // Safe evaluation check
-              const func = new Function('output', 'outputs', `return ${interpolatedCond};`);
-              conditionResult = !!func(outputContext, nodeOutputs);
-            } catch (e) {
-              console.error("Condition evaluation error", e);
-              conditionResult = false;
+          while (curr) {
+            if (curr.type === 'join') {
+              break; // Stop at join node, join will process all incoming branches
             }
 
-            const handleId = conditionResult ? 'true' : 'false';
-            nextEdge = outgoingEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outgoingEdges[0];
-          } else {
-            nextEdge = outgoingEdges[0];
+            if (curr.type === 'parallel') {
+              ctx = await executeParallelNode(curr, ctx);
+            } else if (curr.type === 'foreach') {
+              ctx = await executeForEachNode(curr, ctx);
+            } else {
+              ctx = await executeSingleNode(curr, ctx);
+            }
+
+            const outEdges = edges.filter((e: Record<string, unknown>) => e.source === curr.id);
+            if (outEdges.length === 0) break;
+
+            let nextE = outEdges[0];
+            if (curr.type === 'condition') {
+              let condRes = false;
+              try {
+                const condStr = (curr.data?.condition as string) || 'false';
+                const interpCond = interpolateVariables(condStr, { ...nodeOutputs, ...localOutputs }, ctx);
+                const func = new Function('output', 'outputs', `return ${interpCond};`);
+                condRes = !!func(ctx, { ...nodeOutputs, ...localOutputs });
+              } catch {
+                condRes = false;
+              }
+              const handleId = condRes ? 'true' : 'false';
+              nextE = outEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outEdges[0];
+            }
+
+            if (nextE) {
+              curr = nodes.find((n: Record<string, unknown>) => n.id === nextE.target);
+            } else {
+              curr = null;
+            }
           }
 
-          if (nextEdge) {
-            logExecution(`[Transition] Moving from node (${currentNode.id}) -> node (${nextEdge.target})`);
-            currentNode = nodes.find((n: Record<string, unknown>) => n.id === nextEdge.target);
+          return { output: ctx, lastNodeId: curr?.id || '', nodeLabel: curr?.data?.label as string || '' };
+        };
+
+        // Parallel Fan-Out Execution
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executeParallelNode = async (pNode: any, inContext: string): Promise<string> => {
+          sendEvent({ type: 'node_start', nodeId: pNode.id, nodeType: pNode.type });
+          logExecution(`[Parallel Node Executing] Fanning out concurrent branches`);
+
+          const outEdges = edges.filter((e: Record<string, unknown>) => e.source === pNode.id);
+          sendEvent({ type: 'node_success', nodeId: pNode.id, output: inContext });
+
+          if (outEdges.length === 0) return inContext;
+
+          const branchPromises = outEdges.map(async (edge: Record<string, unknown>) => {
+            const targetNode = nodes.find((n: Record<string, unknown>) => n.id === edge.target);
+            if (!targetNode) return null;
+            const res = await executeSubgraph(targetNode, inContext, { ...nodeOutputs });
+            return {
+              edgeId: edge.id,
+              targetId: targetNode.id,
+              nodeLabel: (targetNode.data?.label as string) || targetNode.id,
+              output: res.output,
+            };
+          });
+
+          const branchResults = (await Promise.all(branchPromises)).filter(Boolean);
+
+          // Find downstream Join node
+          const joinNode = nodes.find((n: Record<string, unknown>) => n.type === 'join');
+          if (joinNode) {
+            sendEvent({ type: 'node_start', nodeId: joinNode.id, nodeType: joinNode.type });
+            const strategy = (joinNode.data?.mergeStrategy as string) || 'array';
+            let mergedStr: string;
+
+            if (strategy === 'object') {
+              const obj: Record<string, string> = {};
+              branchResults.forEach((b) => {
+                if (b) obj[b.nodeLabel] = b.output;
+              });
+              mergedStr = JSON.stringify(obj, null, 2);
+            } else if (strategy === 'text') {
+              mergedStr = branchResults.map((b) => b?.output || '').join('\n\n---\n\n');
+            } else {
+              mergedStr = JSON.stringify(branchResults.map((b) => b?.output || ''), null, 2);
+            }
+
+            nodeOutputs[joinNode.id] = mergedStr;
+            if (joinNode.data?.label) nodeOutputs[joinNode.data.label as string] = mergedStr;
+            logExecution(`[Join Node Executing] Merged ${branchResults.length} parallel outputs using '${strategy}' strategy`);
+            sendEvent({ type: 'node_success', nodeId: joinNode.id, output: mergedStr });
+            return mergedStr;
+          }
+
+          const fallbackMerged = JSON.stringify(branchResults.map((b) => b?.output || ''), null, 2);
+          return fallbackMerged;
+        };
+
+        // ForEach Loop Execution
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const executeForEachNode = async (feNode: any, inContext: string): Promise<string> => {
+          sendEvent({ type: 'node_start', nodeId: feNode.id, nodeType: feNode.type });
+
+          const arraySrc = (feNode.data?.arraySource as string) || 'output';
+          const concurrency = Number(feNode.data?.concurrency || 1);
+          const itemAlias = (feNode.data?.itemAlias as string) || 'item';
+
+          let rawData = interpolateVariables(arraySrc === 'output' ? inContext : arraySrc, nodeOutputs, inContext);
+          let arrayItems: unknown[] = [];
+
+          try {
+            const parsed = JSON.parse(rawData);
+            arrayItems = Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            arrayItems = rawData.split('\n').filter((s) => s.trim().length > 0);
+          }
+
+          logExecution(`[ForEach Node Executing] Iterating over ${arrayItems.length} items (Concurrency: ${concurrency})`);
+
+          const outEdges = edges.filter((e: Record<string, unknown>) => e.source === feNode.id);
+          const loopEdge = outEdges.find((e: Record<string, unknown>) => e.sourceHandle === 'loop');
+          const loopTarget = loopEdge ? nodes.find((n: Record<string, unknown>) => n.id === loopEdge.target) : null;
+
+          const loopResults: string[] = [];
+
+          if (loopTarget) {
+            const processItem = async (item: unknown, idx: number) => {
+              const itemStr = typeof item === 'object' ? JSON.stringify(item) : String(item);
+              const itemOutputs = {
+                ...nodeOutputs,
+                [itemAlias]: itemStr,
+                item: itemStr,
+                itemIndex: String(idx),
+              };
+              nodeOutputs[itemAlias] = itemStr;
+              nodeOutputs['itemIndex'] = String(idx);
+
+              const subRes = await executeSubgraph(loopTarget, itemStr, itemOutputs);
+              return subRes?.output || itemStr;
+            };
+
+            if (concurrency > 1) {
+              for (let i = 0; i < arrayItems.length; i += concurrency) {
+                const chunk = arrayItems.slice(i, i + concurrency);
+                const chunkRes = await Promise.all(chunk.map((item, cIdx) => processItem(item, i + cIdx)));
+                loopResults.push(...chunkRes);
+              }
+            } else {
+              for (let i = 0; i < arrayItems.length; i++) {
+                const res = await processItem(arrayItems[i], i);
+                loopResults.push(res);
+              }
+            }
+          }
+
+          const aggregatedOutput = JSON.stringify(loopResults, null, 2);
+          nodeOutputs[feNode.id] = aggregatedOutput;
+          if (feNode.data?.label) nodeOutputs[feNode.data.label as string] = aggregatedOutput;
+
+          sendEvent({ type: 'node_success', nodeId: feNode.id, output: aggregatedOutput });
+          return aggregatedOutput;
+        };
+
+        // Main Traversal Loop
+        while (currentNode) {
+          if (currentNode.type === 'parallel') {
+            outputContext = await executeParallelNode(currentNode, outputContext);
+
+            // Find node after join
+            const joinNode = nodes.find((n: Record<string, unknown>) => n.type === 'join');
+            if (joinNode) {
+              const joinOutEdges = edges.filter((e: Record<string, unknown>) => e.source === joinNode.id);
+              currentNode = joinOutEdges.length > 0 ? nodes.find((n: Record<string, unknown>) => n.id === joinOutEdges[0].target) : null;
+            } else {
+              break;
+            }
+          } else if (currentNode.type === 'foreach') {
+            outputContext = await executeForEachNode(currentNode, outputContext);
+
+            const outEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
+            const completedEdge = outEdges.find((e: Record<string, unknown>) => e.sourceHandle === 'completed') || outEdges[0];
+            currentNode = completedEdge ? nodes.find((n: Record<string, unknown>) => n.id === completedEdge.target) : null;
+          } else if (currentNode.type === 'join') {
+            // Already handled in parallel execution
+            const joinOutEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
+            currentNode = joinOutEdges.length > 0 ? nodes.find((n: Record<string, unknown>) => n.id === joinOutEdges[0].target) : null;
           } else {
-            logExecution(`[End of Flow] Target node not found`);
-            currentNode = null;
+            outputContext = await executeSingleNode(currentNode, outputContext);
+
+            const outgoingEdges = edges.filter((e: Record<string, unknown>) => e.source === currentNode.id);
+            if (outgoingEdges.length === 0) {
+              logExecution(`[End of Flow] No outgoing edges from node ${currentNode.id}`);
+              break;
+            }
+
+            let nextEdge;
+            if (currentNode.type === 'condition') {
+              let conditionResult = false;
+              try {
+                const condStr = (currentNode.data?.condition as string) || 'false';
+                const interpolatedCond = interpolateVariables(condStr, nodeOutputs, outputContext);
+                const func = new Function('output', 'outputs', `return ${interpolatedCond};`);
+                conditionResult = !!func(outputContext, nodeOutputs);
+              } catch {
+                conditionResult = false;
+              }
+
+              const handleId = conditionResult ? 'true' : 'false';
+              nextEdge = outgoingEdges.find((e: Record<string, unknown>) => e.sourceHandle === handleId) || outgoingEdges[0];
+            } else {
+              nextEdge = outgoingEdges[0];
+            }
+
+            if (nextEdge) {
+              currentNode = nodes.find((n: Record<string, unknown>) => n.id === nextEdge.target);
+            } else {
+              currentNode = null;
+            }
           }
         }
 

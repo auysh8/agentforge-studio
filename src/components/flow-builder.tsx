@@ -19,6 +19,9 @@ import { LLMNode } from "./nodes/llm-node";
 import { PromptNode } from "./nodes/prompt-node";
 import { APINode } from "./nodes/api-node";
 import { ConditionNode } from "./nodes/condition-node";
+import { ParallelNode } from "./nodes/parallel-node";
+import { JoinNode } from "./nodes/join-node";
+import { ForEachNode } from "./nodes/foreach-node";
 import { CodeNode } from "./nodes/code-node";
 import { JsonNode } from "./nodes/json-node";
 import { OutputNode } from "./nodes/output-node";
@@ -32,6 +35,9 @@ const nodeTypes = {
   prompt: PromptNode,
   api: APINode,
   condition: ConditionNode,
+  parallel: ParallelNode,
+  join: JoinNode,
+  foreach: ForEachNode,
   code: CodeNode,
   json: JsonNode,
   output: OutputNode,
@@ -95,6 +101,9 @@ function FlowBuilderContent() {
         };
       if (type === "api") defaultData = { ...defaultData, method: "GET", url: "https://api.example.com/data" };
       if (type === "condition") defaultData = { ...defaultData, condition: "output.contains('error')" };
+      if (type === "parallel") defaultData = { ...defaultData, label: "Parallel Split" };
+      if (type === "join") defaultData = { ...defaultData, label: "Join / Merge", mergeStrategy: "array" };
+      if (type === "foreach") defaultData = { ...defaultData, label: "ForEach Loop", arraySource: "output", concurrency: 1, itemAlias: "item" };
       if (type === "code") defaultData = { ...defaultData, code: "return output.toUpperCase();" };
       if (type === "json") defaultData = { ...defaultData, path: "results[0].title" };
       if (type === "output") defaultData = { ...defaultData, format: "text/plain" };
@@ -142,6 +151,9 @@ function FlowBuilderContent() {
               case "prompt":
                 return "var(--family-ai-accent)";
               case "condition":
+              case "parallel":
+              case "join":
+              case "foreach":
                 return "var(--family-logic-accent)";
               case "api":
                 return "var(--family-integration-accent)";

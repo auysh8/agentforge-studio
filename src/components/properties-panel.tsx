@@ -11,6 +11,9 @@ import {
   ChatCircle,
   PaperPlaneTilt,
   GitBranch,
+  SquaresFour,
+  GitMerge,
+  ArrowsClockwise,
   Code,
   BracketsCurly,
   Globe,
@@ -22,6 +25,9 @@ const nodeTypeConfig: Record<string, { icon: React.ElementType; color: string; b
   prompt: { icon: ChatCircle, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)", label: "Prompt" },
   output: { icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)", label: "Output Node" },
   condition: { icon: GitBranch, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)", label: "Condition" },
+  parallel: { icon: SquaresFour, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)", label: "Parallel Split" },
+  join: { icon: GitMerge, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)", label: "Join / Merge" },
+  foreach: { icon: ArrowsClockwise, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)", label: "ForEach Loop" },
   code: { icon: Code, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "Code Script" },
   json: { icon: BracketsCurly, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)", label: "JSON Extractor" },
   api: { icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)", label: "API Request" },
@@ -322,6 +328,102 @@ export function PropertiesPanel() {
           <p className="text-[10px] text-muted-foreground/60 leading-tight">
             e.g. <code className="font-mono">results[0].title</code> or <code className="font-mono">data.user.name</code>
           </p>
+        </div>
+      )}
+
+      {/* Parallel Split */}
+      {selectedNode.type === "parallel" && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-1">
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">Parallel Fan-Out</p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Connect outgoing edges to multiple nodes. All connected branches will execute concurrently using <code className="font-mono">Promise.all</code>.
+          </p>
+        </div>
+      )}
+
+      {/* Join / Merge */}
+      {selectedNode.type === "join" && (
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-merge-strategy" className="text-xs font-medium text-muted-foreground">
+              Merge Strategy
+            </Label>
+            <select
+              id="node-merge-strategy"
+              value={(selectedNode.data.mergeStrategy as string) || "array"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { mergeStrategy: e.target.value })
+              }
+              className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
+            >
+              <option value="array">Array ([out1, out2])</option>
+              <option value="object">Object ({"{ label1: out1, label2: out2 }"})</option>
+              <option value="text">Concatenated Text</option>
+            </select>
+          </div>
+          <p className="text-[10px] text-muted-foreground/60 leading-tight">
+            Combines all incoming parallel branch outputs into a single payload for downstream nodes.
+          </p>
+        </div>
+      )}
+
+      {/* ForEach Loop */}
+      {selectedNode.type === "foreach" && (
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="node-array-source" className="text-xs font-medium text-muted-foreground">
+              Array Data Source
+            </Label>
+            <Input
+              id="node-array-source"
+              value={(selectedNode.data.arraySource as string) || "output"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { arraySource: e.target.value })
+              }
+              placeholder="output or {{ JSON Extractor }}"
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60 leading-tight">
+              Specify variable containing array or leave as <code className="font-mono">output</code> for incoming JSON array.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="node-concurrency" className="text-xs font-medium text-muted-foreground">
+              Concurrency Mode
+            </Label>
+            <select
+              id="node-concurrency"
+              value={Number(selectedNode.data.concurrency || 1)}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { concurrency: parseInt(e.target.value, 10) })
+              }
+              className="w-full rounded-xl bg-cream border border-warm-border h-9 text-sm px-3"
+            >
+              <option value={1}>Sequential (1 item at a time)</option>
+              <option value={3}>Parallel Batch (3 items at a time)</option>
+              <option value={5}>Parallel Batch (5 items at a time)</option>
+              <option value={10}>Unlimited Parallel</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="node-item-alias" className="text-xs font-medium text-muted-foreground">
+              Loop Item Variable Name
+            </Label>
+            <Input
+              id="node-item-alias"
+              value={(selectedNode.data.itemAlias as string) || "item"}
+              onChange={(e) =>
+                updateNodeData(selectedNode.id, { itemAlias: e.target.value })
+              }
+              placeholder="item"
+              className="rounded-xl bg-cream border-warm-border h-9 text-sm font-mono"
+            />
+            <p className="text-[10px] text-muted-foreground/60 leading-tight">
+              Access item inside loop using <code className="font-mono">{"{{ item }}"}</code> or <code className="font-mono">{"{{ itemIndex }}"}</code>.
+            </p>
+          </div>
         </div>
       )}
 

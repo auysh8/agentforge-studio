@@ -19,6 +19,9 @@ import {
   ChatCircle,
   PaperPlaneTilt,
   GitBranch,
+  SquaresFour,
+  GitMerge,
+  ArrowsClockwise,
   Code,
   BracketsCurly,
   Globe,
@@ -27,20 +30,34 @@ import { useTheme } from "next-themes";
 
 const nodeCategories = [
   {
-    id: "core",
-    name: "Core Nodes",
+    id: "triggers",
+    name: "Triggers & Inputs",
     items: [
       { type: "trigger", label: "Trigger", icon: Play, color: "var(--family-trigger-icon-color)", bg: "var(--family-trigger-icon-bg)" },
+    ],
+  },
+  {
+    id: "ai",
+    name: "AI & Models",
+    items: [
       { type: "llm", label: "LLM Node", icon: Brain, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)" },
       { type: "prompt", label: "Prompt", icon: ChatCircle, color: "var(--family-ai-icon-color)", bg: "var(--family-ai-icon-bg)" },
-      { type: "output", label: "Output Node", icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)" },
     ],
   },
   {
     id: "logic",
-    name: "Logic & Flow",
+    name: "Logic & Flow Control",
     items: [
       { type: "condition", label: "Condition", icon: GitBranch, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)" },
+      { type: "parallel", label: "Parallel Split", icon: SquaresFour, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)" },
+      { type: "join", label: "Join / Merge", icon: GitMerge, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)" },
+      { type: "foreach", label: "ForEach Loop", icon: ArrowsClockwise, color: "var(--family-logic-icon-color)", bg: "var(--family-logic-icon-bg)" },
+    ],
+  },
+  {
+    id: "data",
+    name: "Data & Processing",
+    items: [
       { type: "code", label: "Code Script", icon: Code, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)" },
       { type: "json", label: "JSON Extractor", icon: BracketsCurly, color: "var(--family-data-icon-color)", bg: "var(--family-data-icon-bg)" },
     ],
@@ -50,6 +67,13 @@ const nodeCategories = [
     name: "Integrations",
     items: [
       { type: "api", label: "API Request", icon: Globe, color: "var(--family-integration-icon-color)", bg: "var(--family-integration-icon-bg)" },
+    ],
+  },
+  {
+    id: "output",
+    name: "Output & Formatting",
+    items: [
+      { type: "output", label: "Output Node", icon: PaperPlaneTilt, color: "var(--family-output-icon-color)", bg: "var(--family-output-icon-bg)" },
     ],
   },
 ];
@@ -75,9 +99,12 @@ export function Sidebar({
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Track which categories are expanded. Default to only 'core'
+  // Track which categories are expanded. Default to triggers, ai, logic, data
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    core: true,
+    triggers: true,
+    ai: true,
+    logic: true,
+    data: true,
   });
 
   useEffect(() => {

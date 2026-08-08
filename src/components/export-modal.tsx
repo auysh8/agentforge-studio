@@ -257,6 +257,46 @@ server.tool(
           nodeOutputs[currentNode.id] = outputContext;
           if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
 
+        } else if (currentNode.type === 'parallel') {
+          const outEdges = edges.filter((e) => e.source === currentNode.id);
+          if (outEdges.length > 0) {
+            const branchPromises = outEdges.map(async (edge) => {
+              const targetNode = nodes.find((n) => n.id === edge.target);
+              if (!targetNode) return null;
+              return { label: targetNode.data?.label || targetNode.id, output: outputContext };
+            });
+            const branchRes = (await Promise.all(branchPromises)).filter(Boolean);
+            const joinNode = nodes.find((n) => n.type === 'join');
+            const strategy = joinNode?.data?.mergeStrategy || 'array';
+            if (strategy === 'object') {
+              const obj: Record<string, string> = {};
+              branchRes.forEach((b: any) => { if (b) obj[b.label] = b.output; });
+              outputContext = JSON.stringify(obj, null, 2);
+            } else if (strategy === 'text') {
+              outputContext = branchRes.map((b: any) => b?.output || '').join('\n\n---\n\n');
+            } else {
+              outputContext = JSON.stringify(branchRes.map((b: any) => b?.output || ''), null, 2);
+            }
+          }
+          nodeOutputs[currentNode.id] = outputContext;
+          if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
+
+        } else if (currentNode.type === 'foreach') {
+          const arraySrc = currentNode.data?.arraySource || 'output';
+          const concurrency = Number(currentNode.data?.concurrency || 1);
+          const itemAlias = currentNode.data?.itemAlias || 'item';
+          let rawData = interpolateVariables(arraySrc === 'output' ? outputContext : arraySrc, nodeOutputs, outputContext);
+          let arrayItems: any[] = [];
+          try {
+            const parsed = JSON.parse(rawData);
+            arrayItems = Array.isArray(parsed) ? parsed : [parsed];
+          } catch {
+            arrayItems = rawData.split('\n').filter((s: string) => s.trim().length > 0);
+          }
+          outputContext = JSON.stringify(arrayItems, null, 2);
+          nodeOutputs[currentNode.id] = outputContext;
+          if (currentNode.data?.label) nodeOutputs[currentNode.data.label] = outputContext;
+
         } else if (currentNode.type === 'llm') {
           const modelName = currentNode.data?.model || 'gpt-4o';
           let model: any;
