@@ -1,6 +1,8 @@
 {
   "name": "agentforge-studio",
-  "version": "0.1.0",
+  "version": "1.1.0",
+  "description": "AgentForge Studio - Visual AI Workflow & Agent Builder",
+  "author": "Ayush <ayush@agentforge.studio>",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -40,7 +42,9 @@
       "target": [
         "AppImage",
         "deb"
-      ]
+      ],
+      "maintainer": "Ayush <ayush@agentforge.studio>",
+      "category": "Development"
     }
   },
   "dependencies": {
