@@ -10,11 +10,15 @@ import path from 'path';
 export const maxDuration = 30;
 
 function logExecution(msg: string) {
+  console.log(`[EXECUTION LOG] ${msg}`);
   try {
-    const logPath = path.join(process.cwd(), 'execution.log');
+    const isVercel = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const logPath = isVercel 
+      ? path.join('/tmp', 'execution.log')
+      : path.join(process.cwd(), 'execution.log');
     fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${msg}\n`);
-  } catch (e) {
-    console.error("Failed to write to execution.log", e);
+  } catch {
+    // Ignore fallback file write issues in serverless runtimes
   }
 }
 
