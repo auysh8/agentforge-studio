@@ -22,6 +22,44 @@ function logExecution(msg: string) {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveVariableValue(pathStr: string, allVars: Record<string, string>): any {
+  const parts = pathStr.trim().split('.');
+  const rootKey = parts[0];
+
+  if (!(rootKey in allVars)) return undefined;
+
+  let current: any = allVars[rootKey];
+
+  if (parts.length === 1) return current;
+
+  // Handle special suffixes like .base64, .output, .input
+  if (parts.length === 2 && (parts[1] === 'output' || parts[1] === 'input')) {
+    return current;
+  }
+  if (parts.length === 2 && parts[1] === 'base64') {
+    return Buffer.from(typeof current === 'string' ? current : JSON.stringify(current)).toString('base64');
+  }
+
+  // Try parsing string as JSON for nested property access (e.g. item.company)
+  for (let i = 1; i < parts.length; i++) {
+    if (typeof current === 'string') {
+      try {
+        current = JSON.parse(current);
+      } catch {
+        return undefined;
+      }
+    }
+    if (current && typeof current === 'object') {
+      current = current[parts[i]];
+    } else {
+      return undefined;
+    }
+  }
+
+  return current;
+}
+
 function interpolateVariables(
   text: string,
   nodeOutputs: Record<string, string>,
@@ -29,20 +67,28 @@ function interpolateVariables(
 ): string {
   if (!text) return text;
 
+  const allVars: Record<string, string> = {
+    output: lastOutput,
+    outputContext: lastOutput,
+    ...nodeOutputs,
+  };
+
+  const replacePlaceholderInString = (str: string): string => {
+    return str.replace(/\{\{\s*([\w\-\.]+)\s*\}\}/g, (match, pathStr) => {
+      const resolved = resolveVariableValue(pathStr, allVars);
+      if (resolved === undefined) return match;
+      if (typeof resolved === 'object') return JSON.stringify(resolved);
+      return String(resolved);
+    });
+  };
+
   // 1. Try parsing text as a JSON template object
   try {
     const obj = JSON.parse(text);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const replaceInObj = (item: any): any => {
       if (typeof item === 'string') {
-        let res = item.replace(/\{\{\s*(output|outputContext)\s*\}\}/gi, lastOutput);
-        res = res.replace(/\{\{\s*(output|outputContext)\.base64\s*\}\}/gi, Buffer.from(lastOutput).toString('base64'));
-        for (const [key, val] of Object.entries(nodeOutputs)) {
-          const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          res = res.replace(new RegExp(`\\{\\{\\s*${escapedKey}(\\.(output|input))?\\s*\\}\\}`, 'gi'), val);
-          res = res.replace(new RegExp(`\\{\\{\\s*${escapedKey}\\.base64\\s*\\}\\}`, 'gi'), Buffer.from(val).toString('base64'));
-        }
-        return res;
+        return replacePlaceholderInString(item);
       }
       if (Array.isArray(item)) return item.map(replaceInObj);
       if (item && typeof item === 'object') {
@@ -57,30 +103,7 @@ function interpolateVariables(
     return JSON.stringify(replaceInObj(obj), null, 2);
   } catch {
     // 2. Fallback for raw text templates
-    let result = text;
-    const allVars: Record<string, string> = {
-      output: lastOutput,
-      outputContext: lastOutput,
-      ...nodeOutputs,
-    };
-
-    for (const [key, val] of Object.entries(allVars)) {
-      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-      // Replace JSON-quoted placeholders with safely JSON-stringified values
-      const quotedRegex = new RegExp(`"\\{\\{\\s*${escapedKey}(\\.(output|input))?\\s*\\}}"`, 'gi');
-      result = result.replace(quotedRegex, JSON.stringify(val));
-
-      const rawRegex = new RegExp(`\\{\\{\\s*${escapedKey}(\\.(output|input))?\\s*\\}\\}`, 'gi');
-      result = result.replace(rawRegex, val);
-
-      const quotedB64Regex = new RegExp(`"\\{\\{\\s*${escapedKey}\\.base64\\s*\\}}"`, 'gi');
-      result = result.replace(quotedB64Regex, JSON.stringify(Buffer.from(val).toString('base64')));
-
-      const rawB64Regex = new RegExp(`\\{\\{\\s*${escapedKey}\\.base64\\s*\\}\\}`, 'gi');
-      result = result.replace(rawB64Regex, Buffer.from(val).toString('base64'));
-    }
-    return result;
+    return replacePlaceholderInString(text);
   }
 }
 
