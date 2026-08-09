@@ -1,4 +1,4 @@
-# AgentForge Studio 🛠️
+# AgentForge Studio 
 
 > **A visual workflow builder and execution environment for designing, testing, and deploying AI agent orchestration pipelines.**
 
@@ -11,29 +11,29 @@
 
 ---
 
-### 🌐 **Try the Live App**: [https://agentforge-studio-lime.vercel.app](https://agentforge-studio-lime.vercel.app)
-### ⭐️ **If you find AgentForge Studio useful, please give us a star on GitHub! It helps the project grow.** ⭐️
+### **Try the Live App**: [https://agentforge-studio-lime.vercel.app](https://agentforge-studio-lime.vercel.app)
+### **If you find AgentForge Studio useful, please give us a star on GitHub! It helps the project grow.** 
 
 ---
 
-## 📸 Visual Preview
+## Visual Preview
 
 ![AgentForge Studio Interface](public/preview.png)
 
 ---
 
-## ✨ Features
+## Features
 
-- 🎨 **Visual Flow Builder**: Interactive drag-and-drop node canvas powered by `@xyflow/react`.
-- 🤖 **Multi-Provider LLM Nodes**: Native support for OpenAI, Mistral, Google Gemini, and local Ollama models.
-- 🔀 **Conditional Branching**: Smart decision trees with condition logic evaluation nodes.
-- 🌐 **External API Nodes**: Integrate third-party HTTP endpoints directly into execution graphs.
-- 💻 **Real-Time Console Panel**: Inspect step execution, output streams, and debug logs live.
-- 📦 **Modular Workflow Export**: Instantly export flow configurations to JSON or runtime SDK code.
+- **Visual Flow Builder**: Interactive drag-and-drop node canvas powered by `@xyflow/react`.
+- **Multi-Provider LLM Nodes**: Native support for OpenAI, Mistral, Google Gemini, and local Ollama models.
+- **Conditional Branching**: Smart decision trees with condition logic evaluation nodes.
+- **External API Nodes**: Integrate third-party HTTP endpoints directly into execution graphs.
+- **Real-Time Console Panel**: Inspect step execution, output streams, and debug logs live.
+- **Modular Workflow Export**: Instantly export flow configurations to JSON or runtime SDK code.
 
 ---
 
-## 🏗️ Architecture & Stack
+## Architecture & Stack
 
 AgentForge Studio combines Next.js App Router for serverless execution with React Flow and Zustand for reactive visual node graphs:
 
@@ -53,7 +53,7 @@ agentforge-studio/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Live Demo
 Try it instantly in your browser without installing anything: [https://agentforge-studio-lime.vercel.app](https://agentforge-studio-lime.vercel.app)
@@ -85,11 +85,11 @@ Try it instantly in your browser without installing anything: [https://agentforg
 
 Contributions of all sizes are welcome! Check out our [Contributing Guide](CONTRIBUTING.md) to get started.
 
-- 🐛 **Found a bug?** Open a [Bug Report](https://github.com/auysh8/agentforge-studio/issues/new?template=bug_report.md)
-- 💡 **Have a feature idea?** Submit a [Feature Request](https://github.com/auysh8/agentforge-studio/issues/new?template=feature_request.md)
+- **Found a bug?** Open a [Bug Report](https://github.com/auysh8/agentforge-studio/issues/new?template=bug_report.md)
+- **Have a feature idea?** Submit a [Feature Request](https://github.com/auysh8/agentforge-studio/issues/new?template=feature_request.md)
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the [MIT License](LICENSE).
