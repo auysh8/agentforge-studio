@@ -6,9 +6,9 @@
   "private": true,
   "main": "electron/main.js",
   "scripts": {
-    "dev": "next dev --turbo",
-    "build": "next build",
-    "start": "next start",
+    "dev": "node api.js && next dev --turbo",
+    "build": "node api.js && next build",
+    "start": "node api.js && next start",
     "lint": "eslint",
     "desktop:dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
     "desktop:build": "next build && node -e \"const fs=require('fs'); fs.cpSync('.next/static', '.next/standalone/.next/static', {recursive: true}); fs.cpSync('public', '.next/standalone/public', {recursive: true, errorOnExist: false});\" && electron-builder",
@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.24",
+    "@ai-sdk/groq": "^4.0.26",
     "@ai-sdk/mistral": "^4.0.13",
     "@ai-sdk/openai": "^4.0.16",
     "@ai-sdk/react": "^4.0.34",

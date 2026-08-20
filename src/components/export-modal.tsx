@@ -113,6 +113,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { generateText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createGroq } from '@ai-sdk/groq';
 import { createOllama } from 'ollama-ai-provider';
 import { createMistral } from '@ai-sdk/mistral';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -308,6 +309,16 @@ server.tool(
           const modelName = currentNode.data?.model || 'gpt-4o';
           let model: any;
           const mLower = modelName.toLowerCase();
+          const isGroq =
+            mLower.startsWith('groq/') ||
+            mLower.startsWith('groq-') ||
+            mLower.includes('groq') ||
+            mLower.startsWith('llama-3') ||
+            mLower.startsWith('llama3') ||
+            mLower.startsWith('deepseek-r1') ||
+            mLower.includes('gemma2-9b') ||
+            mLower === 'mixtral-8x7b-32768';
+
           const isGemini =
             mLower.startsWith('gemini-') ||
             mLower.includes('google') ||
@@ -315,7 +326,11 @@ server.tool(
             mLower.includes('gemini') ||
             /^(3\\.[0-9]|2\\.[0-9]|1\\.[0-9])/.test(mLower);
 
-          if (isGemini && !mLower.startsWith('gpt-') && !mLower.includes('mistral')) {
+          if (isGroq && !mLower.startsWith('gpt-') && !mLower.startsWith('gemini-')) {
+            const resolvedModel = modelName.replace(/^groq[\/-]/i, '');
+            const groq = createGroq({ apiKey: process.env.GROQ_API_KEY || '' });
+            model = groq(resolvedModel);
+          } else if (isGemini && !mLower.startsWith('gpt-') && !mLower.includes('mistral')) {
             const resolvedModel = mLower.startsWith('gemini-') ? modelName : \`gemini-\${modelName}\`;
             const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '' });
             model = google(resolvedModel);
@@ -414,6 +429,7 @@ function generatePackageJson() {
     "ai": "latest",
     "@ai-sdk/google": "latest",
     "@ai-sdk/openai": "latest",
+    "@ai-sdk/groq": "latest",
     "@ai-sdk/mistral": "latest",
     "ollama-ai-provider": "latest",
     "dotenv": "^16.4.5",
@@ -437,6 +453,9 @@ GOOGLE_GENERATIVE_AI_API_KEY=
 # OpenAI Key
 OPENAI_API_KEY=
 
+# Groq Key
+GROQ_API_KEY=
+
 # Mistral Key
 MISTRAL_API_KEY=
 
@@ -456,6 +475,7 @@ function generateMcpConfigSnippet(toolName: string) {
       "env": {
         "GEMINI_API_KEY": "YOUR_GEMINI_API_KEY_HERE",
         "OPENAI_API_KEY": "YOUR_OPENAI_API_KEY_HERE",
+        "GROQ_API_KEY": "YOUR_GROQ_API_KEY_HERE",
         "MISTRAL_API_KEY": "YOUR_MISTRAL_API_KEY_HERE"
       }
     }
@@ -613,6 +633,7 @@ export function ExportModal({
             const parsed = JSON.parse(savedSettings);
             if (parsed.googleKey) headers["x-google-api-key"] = parsed.googleKey;
             if (parsed.openaiKey) headers["x-openai-api-key"] = parsed.openaiKey;
+            if (parsed.groqKey) headers["x-groq-api-key"] = parsed.groqKey;
             if (parsed.mistralKey) headers["x-mistral-api-key"] = parsed.mistralKey;
             if (parsed.defaultModel) headers["x-default-model"] = parsed.defaultModel;
           } catch {

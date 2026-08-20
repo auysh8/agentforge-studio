@@ -45,10 +45,18 @@ const OllamaIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
   </svg>
 );
 
+const GroqIcon = ({ className = "w-3.5 h-3.5" }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13 2L3 14h7v8l10-12h-7V2z" />
+  </svg>
+);
+
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [openaiKey, setOpenaiKey] = useState("");
   const [googleKey, setGoogleKey] = useState("");
+  const [groqKey, setGroqKey] = useState("");
   const [mistralKey, setMistralKey] = useState("");
+  const [openrouterKey, setOpenrouterKey] = useState("");
   const [ollamaUrl, setOllamaUrl] = useState("http://localhost:11434/api");
   const [defaultModel, setDefaultModel] = useState("gemini-2.0-flash");
   const [savedToast, setSavedToast] = useState(false);
@@ -62,7 +70,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           const parsed = JSON.parse(savedSettings);
           if (parsed.openaiKey) setOpenaiKey(parsed.openaiKey);
           if (parsed.googleKey) setGoogleKey(parsed.googleKey);
+          if (parsed.groqKey) setGroqKey(parsed.groqKey);
           if (parsed.mistralKey) setMistralKey(parsed.mistralKey);
+          if (parsed.openrouterKey) setOpenrouterKey(parsed.openrouterKey);
           if (parsed.ollamaUrl !== undefined) setOllamaUrl(parsed.ollamaUrl);
           if (parsed.defaultModel) setDefaultModel(parsed.defaultModel);
         } catch {
@@ -74,7 +84,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   const handleSave = () => {
     // Save-time validation: Ensure at least one provider is configured
-    if (!googleKey.trim() && !openaiKey.trim() && !mistralKey.trim() && !ollamaUrl.trim()) {
+    if (!googleKey.trim() && !openaiKey.trim() && !groqKey.trim() && !mistralKey.trim() && !openrouterKey.trim() && !ollamaUrl.trim()) {
       setValidationError("Configure at least one provider key or local endpoint before saving.");
       return;
     }
@@ -86,7 +96,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
         JSON.stringify({
           openaiKey,
           googleKey,
+          groqKey,
           mistralKey,
+          openrouterKey,
           ollamaUrl,
           defaultModel,
         })
@@ -184,6 +196,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             />
           </div>
 
+          {/* Groq Key */}
+          <div className="space-y-1.5">
+            <Label htmlFor="groq-key" className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span className="flex items-center gap-[8px]">
+                <div className="w-[20px] h-[20px] rounded-[5px] bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <GroqIcon className="w-3.5 h-3.5 text-amber-600" />
+                </div>
+                <span>Groq API Key</span>
+              </span>
+              <span className="text-[11px] text-muted-foreground font-normal">Optional</span>
+            </Label>
+            <Input
+              id="groq-key"
+              type="password"
+              placeholder="gsk_..."
+              value={groqKey}
+              onChange={(e) => setGroqKey(e.target.value)}
+              className="rounded-[9px] bg-cream border-warm-border py-[11px] px-[14px] h-10 text-[13px] font-mono"
+            />
+          </div>
+
           {/* Mistral Key */}
           <div className="space-y-1.5">
             <Label htmlFor="mistral-key" className="text-xs font-semibold text-foreground flex items-center justify-between">
@@ -201,6 +234,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               placeholder="Enter Mistral API key"
               value={mistralKey}
               onChange={(e) => setMistralKey(e.target.value)}
+              className="rounded-[9px] bg-cream border-warm-border py-[11px] px-[14px] h-10 text-[13px] font-mono"
+            />
+          </div>
+
+          {/* OpenRouter Key */}
+          <div className="space-y-1.5">
+            <Label htmlFor="openrouter-key" className="text-xs font-semibold text-foreground flex items-center justify-between">
+              <span className="flex items-center gap-[8px]">
+                <div className="w-[20px] h-[20px] rounded-[5px] bg-purple-500/10 flex items-center justify-center shrink-0">
+                  <Key className="w-3.5 h-3.5 text-purple-600" />
+                </div>
+                <span>OpenRouter API Key</span>
+              </span>
+              <span className="text-[11px] text-muted-foreground font-normal">Optional</span>
+            </Label>
+            <Input
+              id="openrouter-key"
+              type="password"
+              placeholder="sk-or-v1-..."
+              value={openrouterKey}
+              onChange={(e) => setOpenrouterKey(e.target.value)}
               className="rounded-[9px] bg-cream border-warm-border py-[11px] px-[14px] h-10 text-[13px] font-mono"
             />
           </div>
