@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createGroq } from '@ai-sdk/groq';
 import { createMistral } from '@ai-sdk/mistral';
 
 export async function POST(req: Request) {
@@ -9,10 +10,12 @@ export async function POST(req: Request) {
 
     const customGoogleKey = req.headers.get('x-google-api-key') || req.headers.get('x-gemini-api-key') || '';
     const customOpenAIKey = req.headers.get('x-openai-api-key') || '';
+    const customGroqKey = req.headers.get('x-groq-api-key') || '';
     const customMistralKey = req.headers.get('x-mistral-api-key') || '';
 
     const googleKey = customGoogleKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
     const openaiKey = customOpenAIKey || process.env.OPENAI_API_KEY || '';
+    const groqKey = customGroqKey || process.env.GROQ_API_KEY || '';
     const mistralKey = customMistralKey || process.env.MISTRAL_API_KEY || '';
 
     const requestedModel = req.headers.get('x-default-model') || '';
@@ -29,6 +32,12 @@ export async function POST(req: Request) {
       const openai = createOpenAI({ apiKey: openaiKey });
       const targetModel = (requestedModel && requestedModel.startsWith('gpt-')) ? requestedModel : 'gpt-4o-mini';
       model = openai(targetModel);
+    } else if (groqKey) {
+      const groq = createGroq({ apiKey: groqKey });
+      const targetModel = (requestedModel && (requestedModel.includes('llama') || requestedModel.includes('groq') || requestedModel.includes('deepseek') || requestedModel.includes('gemma')))
+        ? requestedModel.replace(/^groq[\/-]/i, '')
+        : 'llama-3.3-70b-versatile';
+      model = groq(targetModel);
     } else if (mistralKey) {
       const mistral = createMistral({ apiKey: mistralKey });
       const targetModel = (requestedModel && requestedModel.includes('mistral')) ? requestedModel : 'mistral-small-latest';

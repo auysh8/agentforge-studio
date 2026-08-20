@@ -1,13 +1,14 @@
 import { streamText, generateText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 import { createOpenAI } from '@ai-sdk/openai';
+import { createGroq } from '@ai-sdk/groq';
 import { createMistral } from '@ai-sdk/mistral';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import fs from 'fs';
 import path from 'path';
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+// Allow streaming responses up to 60 seconds
+export const maxDuration = 60;
 
 function logExecution(msg: string) {
   console.log(`[EXECUTION LOG] ${msg}`);
@@ -24,7 +25,20 @@ function logExecution(msg: string) {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolveVariableValue(pathStr: string, allVars: Record<string, string>): any {
-  const parts = pathStr.trim().split('.');
+  const trimmed = pathStr.trim();
+
+  // Dynamic system date variables for automated cron searches
+  if (trimmed === '$date.7daysAgo' || trimmed === '$date.7d' || trimmed === 'date.7daysAgo') {
+    return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  }
+  if (trimmed === '$date.today' || trimmed === 'date.today') {
+    return new Date().toISOString();
+  }
+  if (trimmed === '$date.yesterday' || trimmed === 'date.yesterday') {
+    return new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  }
+
+  const parts = trimmed.split('.');
   const rootKey = parts[0];
 
   if (!(rootKey in allVars)) return undefined;
@@ -113,14 +127,20 @@ export async function POST(req: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       const sendEvent = (data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // Stream controller closed or client disconnected; safely ignore enqueue error
+        }
       };
 
       try {
         logExecution("--- New Flow Execution Request Received ---");
         const customOpenAIKey = req.headers.get('x-openai-api-key') || '';
         const customGoogleKey = req.headers.get('x-google-api-key') || req.headers.get('x-gemini-api-key') || '';
+        const customGroqKey = req.headers.get('x-groq-api-key') || '';
         const customMistralKey = req.headers.get('x-mistral-api-key') || '';
+        const customOpenRouterKey = req.headers.get('x-openrouter-api-key') || req.headers.get('x-open-router-key') || '';
 
         const { nodes, edges } = await req.json();
 
@@ -255,7 +275,22 @@ export async function POST(req: Request) {
                   fetchOptions.body = bodyStr;
                 }
 
-                const response = await fetch(url, fetchOptions);
+                let response: Response | undefined;
+                let lastFetchErr: any;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                  try {
+                    response = await fetch(url, fetchOptions);
+                    if (response) break;
+                  } catch (err: any) {
+                    lastFetchErr = err;
+                    logExecution(`[API Node Fetch Retry ${attempt + 1}/3]: ${err.message}`);
+                    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+                  }
+                }
+                if (!response) {
+                  throw lastFetchErr || new Error(`Fetch failed for URL: ${url}`);
+                }
+
                 resContext = await response.text();
                 logExecution(`[API Response Status]: ${response.status} ${response.statusText}`);
               } catch (e) {
@@ -311,37 +346,163 @@ export async function POST(req: Request) {
 
             let model;
             const mLower = modelName.toLowerCase();
-            const isGemini =
+            const isExplicitOpenRouter = mLower.startsWith('openrouter/');
+            const isGroqModel =
+              mLower.startsWith('groq/') ||
+              mLower.startsWith('groq-') ||
+              mLower.includes('groq') ||
+              mLower.startsWith('llama') ||
+              mLower.startsWith('deepseek') ||
+              mLower.startsWith('qwen') ||
+              mLower.includes('gemma') ||
+              mLower === 'mixtral-8x7b-32768';
+
+            const isGeminiModel =
               mLower.startsWith('gemini-') ||
               mLower.includes('google') ||
               mLower.includes('flash') ||
-              mLower.includes('gemini') ||
-              /^(3\.[0-9]|2\.[0-9]|1\.[0-9])/.test(mLower);
+              mLower.includes('gemini');
 
-            if (isGemini && !mLower.startsWith('gpt-') && !mLower.includes('mistral')) {
+            const isOpenAIModel =
+              mLower.startsWith('gpt-') ||
+              mLower.startsWith('openai/gpt-') ||
+              mLower.startsWith('o1-') ||
+              mLower.startsWith('o3-');
+
+            if (isExplicitOpenRouter) {
+              const resolvedModel = modelName.toLowerCase() === 'openrouter/free' || modelName.toLowerCase() === 'openrouter/auto' 
+                ? modelName 
+                : modelName.replace(/^openrouter\//i, '');
+              const openrouter = createOpenAI({
+                baseURL: 'https://openrouter.ai/api/v1',
+                apiKey: customOpenRouterKey || process.env.OPENROUTER_API_KEY || customOpenAIKey || process.env.OPENAI_API_KEY || 'openrouter-free',
+              });
+              model = openrouter(resolvedModel);
+            } else if (isGroqModel && !mLower.startsWith('gpt-') && !mLower.startsWith('gemini-')) {
+              const resolvedModel = modelName.replace(/^groq[\/-]/i, '');
+              const groq = createGroq({ apiKey: customGroqKey || process.env.GROQ_API_KEY || '' });
+              model = groq(resolvedModel);
+            } else if (isGeminiModel && !mLower.startsWith('gpt-')) {
               const resolvedModel = mLower.startsWith('gemini-') ? modelName : `gemini-${modelName}`;
               const google = createGoogleGenerativeAI({ apiKey: customGoogleKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '' });
               model = google(resolvedModel);
-            } else if (mLower.startsWith('gpt-')) {
+            } else if (isOpenAIModel) {
+              const resolvedModel = modelName.replace(/^openai\//i, '');
               const openai = createOpenAI({ apiKey: customOpenAIKey || process.env.OPENAI_API_KEY || '' });
-              model = openai(modelName);
+              model = openai(resolvedModel);
+            } else if (mLower.includes('/') && (customOpenRouterKey || process.env.OPENROUTER_API_KEY)) {
+              const openrouter = createOpenAI({
+                baseURL: 'https://openrouter.ai/api/v1',
+                apiKey: customOpenRouterKey || process.env.OPENROUTER_API_KEY || '',
+              });
+              model = openrouter(modelName);
             } else if (mLower.includes('mistral') || mLower.includes('mixtral')) {
               const mistral = createMistral({ apiKey: customMistralKey || process.env.MISTRAL_API_KEY || '' });
               model = mistral(modelName);
             } else {
-              const ollama = createOllama({ baseURL: 'http://localhost:11434/api' });
-              model = ollama(modelName);
+              // OpenAI v2-compliant fallback for local Ollama models (http://localhost:11434/v1)
+              const ollamaOpenAI = createOpenAI({
+                baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+                apiKey: 'ollama',
+              });
+              model = ollamaOpenAI(modelName);
             }
 
             const interpolatedInput = interpolateVariables(resContext, nodeOutputs, resContext);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            let { text } = await (generateText as any)({
-              model: model as any,
-              system: systemPrompt,
-              prompt: interpolatedInput,
-              maxTokens: 4096,
-            });
+            let text = '';
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const res = await (generateText as any)({
+                model: model as any,
+                system: systemPrompt,
+                prompt: interpolatedInput,
+                maxTokens: 4096,
+                maxRetries: 3,
+              });
+              text = res.text;
+            } catch (err: any) {
+              const errStr = (err?.message || String(err)).toLowerCase();
+              const isRateLimit = errStr.includes('rate limit') || errStr.includes('429') || err?.status === 429;
+
+              if (!isRateLimit) {
+                throw err;
+              }
+
+              logExecution(`[Rate Limit Exceeded on ${modelName}]: ${err.message}. Attempting provider fallback...`);
+
+              let fallbackSuccess = false;
+
+              // Fallback 1: Groq (llama-3.3-70b-versatile)
+              const groqKey = customGroqKey || process.env.GROQ_API_KEY || '';
+              if (!fallbackSuccess && groqKey && !isGroqModel) {
+                try {
+                  logExecution(`[Rate Limit Fallback] Retrying with Groq (llama-3.3-70b-versatile)...`);
+                  const groqModel = createGroq({ apiKey: groqKey })('llama-3.3-70b-versatile');
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const res = await (generateText as any)({
+                    model: groqModel as any,
+                    system: systemPrompt,
+                    prompt: interpolatedInput,
+                    maxTokens: 4096,
+                    maxRetries: 2,
+                  });
+                  text = res.text;
+                  fallbackSuccess = true;
+                  logExecution(`[Rate Limit Fallback Success] Finished execution using Groq fallback.`);
+                } catch (fallbackErr: any) {
+                  logExecution(`[Groq Fallback Failed]: ${fallbackErr.message}`);
+                }
+              }
+
+              // Fallback 2: Gemini (gemini-2.0-flash)
+              const googleKey = customGoogleKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
+              if (!fallbackSuccess && googleKey && !isGeminiModel) {
+                try {
+                  logExecution(`[Rate Limit Fallback] Retrying with Gemini (gemini-2.0-flash)...`);
+                  const googleModel = createGoogleGenerativeAI({ apiKey: googleKey })('gemini-2.0-flash');
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const res = await (generateText as any)({
+                    model: googleModel as any,
+                    system: systemPrompt,
+                    prompt: interpolatedInput,
+                    maxTokens: 4096,
+                    maxRetries: 2,
+                  });
+                  text = res.text;
+                  fallbackSuccess = true;
+                  logExecution(`[Rate Limit Fallback Success] Finished execution using Gemini fallback.`);
+                } catch (fallbackErr: any) {
+                  logExecution(`[Gemini Fallback Failed]: ${fallbackErr.message}`);
+                }
+              }
+
+              // Fallback 3: OpenAI (gpt-4o-mini)
+              const openaiKey = customOpenAIKey || process.env.OPENAI_API_KEY || '';
+              if (!fallbackSuccess && openaiKey && !mLower.startsWith('gpt-')) {
+                try {
+                  logExecution(`[Rate Limit Fallback] Retrying with OpenAI (gpt-4o-mini)...`);
+                  const openaiModel = createOpenAI({ apiKey: openaiKey })('gpt-4o-mini');
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const res = await (generateText as any)({
+                    model: openaiModel as any,
+                    system: systemPrompt,
+                    prompt: interpolatedInput,
+                    maxTokens: 4096,
+                    maxRetries: 2,
+                  });
+                  text = res.text;
+                  fallbackSuccess = true;
+                  logExecution(`[Rate Limit Fallback Success] Finished execution using OpenAI fallback.`);
+                } catch (fallbackErr: any) {
+                  logExecution(`[OpenAI Fallback Failed]: ${fallbackErr.message}`);
+                }
+              }
+
+              if (!fallbackSuccess) {
+                throw err;
+              }
+            }
 
             text = text.trim();
             if (text.startsWith('```')) {
@@ -474,7 +635,21 @@ export async function POST(req: Request) {
 
           try {
             const parsed = JSON.parse(rawData);
-            arrayItems = Array.isArray(parsed) ? parsed : [parsed];
+            if (Array.isArray(parsed)) {
+              arrayItems = parsed;
+            } else if (parsed && typeof parsed === 'object') {
+              // Unroll common API response wrapper keys (e.g. Exa's "results", Firecrawl's "data")
+              const possibleArray =
+                (Array.isArray((parsed as Record<string, unknown>).results) && (parsed as Record<string, unknown>).results as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).data) && (parsed as Record<string, unknown>).data as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).items) && (parsed as Record<string, unknown>).items as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).jobs) && (parsed as Record<string, unknown>).jobs as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).hits) && (parsed as Record<string, unknown>).hits as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).prospects) && (parsed as Record<string, unknown>).prospects as unknown[]) ||
+                (Array.isArray((parsed as Record<string, unknown>).records) && (parsed as Record<string, unknown>).records as unknown[]);
+
+              arrayItems = possibleArray || [parsed];
+            }
           } catch {
             arrayItems = rawData.split('\n').filter((s) => s.trim().length > 0);
           }

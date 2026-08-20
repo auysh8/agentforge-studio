@@ -29,6 +29,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+execution.log
+
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -47,3 +49,5 @@ execution.log
 # desktop builds
 /dist/
 /dist-desktop/
+execution.log
+execution.log

@@ -135,7 +135,9 @@ export default function Home() {
           const parsed = JSON.parse(savedSettings);
           if (parsed.openaiKey) headers["x-openai-api-key"] = parsed.openaiKey;
           if (parsed.googleKey) headers["x-google-api-key"] = parsed.googleKey;
+          if (parsed.groqKey) headers["x-groq-api-key"] = parsed.groqKey;
           if (parsed.mistralKey) headers["x-mistral-api-key"] = parsed.mistralKey;
+          if (parsed.openrouterKey) headers["x-openrouter-api-key"] = parsed.openrouterKey;
         } catch {
           // ignore error
         }

@@ -122,6 +122,11 @@ export function PropertiesPanel() {
             className="rounded-xl bg-cream border-warm-border h-9 text-sm"
           />
           <datalist id="model-list">
+            <option value="llama-3.3-70b-versatile" />
+            <option value="llama-3.1-8b-instant" />
+            <option value="deepseek-r1-distill-llama-70b" />
+            <option value="gemma2-9b-it" />
+            <option value="mixtral-8x7b-32768" />
             <option value="gemini-2.0-flash" />
             <option value="gemini-1.5-flash" />
             <option value="gemini-1.5-pro" />
@@ -141,7 +146,7 @@ export function PropertiesPanel() {
             <option value="phi3" />
           </datalist>
           <p className="text-[10px] text-muted-foreground/60">
-            e.g. gemini-2.0-flash, gpt-4o, mistral-large-latest
+            e.g. llama-3.3-70b-versatile, gemini-2.0-flash, gpt-4o, mistral-large-latest
           </p>
         </div>
       )}
