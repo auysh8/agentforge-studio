@@ -51,3 +51,7 @@ execution.log
 execution.log
 execution.log
 config.bat
+
+# Security blocklist
+api.js
+*.orc
